@@ -27,7 +27,7 @@ struct _ViewerFileClass {
 
 // Methods
 ViewerFile *viewer_file_new();
-void viewer_file_open(ViewerFile *const,GError *const *const);
+void viewer_file_open(ViewerFile *const,const GError *const *const);
 
 G_END_DECLS
 

@@ -26,7 +26,8 @@ LDLIBS:=$(shell pkg-config --libs gobject-2.0,gio-unix-2.0)
 main.out: main.c viewer-file.c viewer-file.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.c , $^ ) $(LDLIBS)
 
-# %.i: viewer-file.c viewer-file.h; $(CC) -E $(CFLAGS) -o $@ $(filter %.c , $^ )
+%.i: %.c; $(CC) -E $(CFLAGS) -o $@ $<
+viewer-file.i:
 
 clean:
 	@rm -fv *.s *.o *.out *.i # *.h.gch

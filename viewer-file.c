@@ -6,17 +6,14 @@
 // Private structure
 typedef struct _ViewerFilePrivate {
   // Private data for derivable (impossible for final?)
-  gchar *filename;
-  // guint zoom_level;
-  GInputStream *input_stream;
+  GInputStream *input_stream; // Private
 } ViewerFilePrivate;
 
 // Instance structure
 typedef struct _ViewerFile {
   GObject parent_instance;
-  gchar *filename;
-  guint zoom_level;
-  // GInputStream *input_stream;
+  gchar *filename; // Public
+  guint zoom_level; // Public
 } ViewerFile;
 
 // Derivable types may have both
@@ -46,8 +43,9 @@ static void viewer_file_dispose(GObject *const gobject){
 }
 
 static void viewer_file_finalize(GObject *const gobject){
-  ViewerFilePrivate *const priv=viewer_file_get_instance_private(VIEWER_FILE(gobject));
-  g_free(priv->filename);
+  ViewerFile *self=VIEWER_FILE(gobject);
+  g_free(self->filename);
+  self->filename=NULL;
   /* Always chain up to the parent class; as with dispose(), finalize()
    * is guaranteed to exist on the parent's class virtual function table
    */
@@ -55,7 +53,7 @@ static void viewer_file_finalize(GObject *const gobject){
 }
 
 typedef enum _ViewerFileProperty {
-  PROP_FILENAME = 1,
+  PROP_FILENAME=1,
   PROP_ZOOM_LEVEL,
   N_PROPERTIES
 } ViewerFileProperty;
@@ -76,7 +74,7 @@ static void viewer_file_set_property(
     g_print("filename: %s\n", self->filename);
     break;
   case PROP_ZOOM_LEVEL:
-    self->zoom_level = g_value_get_uint(value);
+    self->zoom_level=g_value_get_uint(value);
     g_print("zoom level: %u\n", self->zoom_level);
     break;
   default:
@@ -92,7 +90,7 @@ static void viewer_file_get_property(
   GValue *const value,
   GParamSpec *const pspec
 ){
-  ViewerFile *self = VIEWER_FILE (object);
+  ViewerFile *self=VIEWER_FILE (object);
   switch ((ViewerFileProperty)property_id){
   case PROP_FILENAME:
     g_value_set_string(value, self->filename);
@@ -111,18 +109,18 @@ static void viewer_file_class_init(ViewerFileClass *klass){
 
   GObjectClass *object_class=G_OBJECT_CLASS(klass);
 
+  // Object destruction
   object_class->dispose=viewer_file_dispose;
   object_class->finalize=viewer_file_finalize;
 
+  // Object properties
   object_class->set_property=viewer_file_set_property;
   object_class->get_property=viewer_file_get_property;
-
   obj_properties[PROP_FILENAME]=g_param_spec_string(
     "filename","Filename","Name of the file to load and display from.",
     NULL  /* default value */,
     G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE
   );
-
   obj_properties[PROP_ZOOM_LEVEL]=g_param_spec_uint(
     "zoom-level","Zoom level","Zoom level to view the file at.",
     0  /* minimum value */,
@@ -130,30 +128,30 @@ static void viewer_file_class_init(ViewerFileClass *klass){
     2  /* default value */,
     G_PARAM_READWRITE
   );
-
-  g_object_class_install_properties(
-    object_class,
-    N_PROPERTIES,
-    obj_properties
-  );
+  g_object_class_install_properties(object_class,N_PROPERTIES,obj_properties);
 
 }
 
 /* initialize all public and private members to reasonable default values.
  * They are all automatically initialized to 0 to begin with. */
 static void viewer_file_init(ViewerFile *const self){
+
   ViewerFilePrivate *priv=viewer_file_get_instance_private(self);
 
-  // #define VIEWER_TYPE_INPUT_STREAM G_TYPE_INPUT_STREAM
-  #define VIEWER_TYPE_INPUT_STREAM g_input_stream_get_type()
+  //                                                                   //   compile-time runtime (O)K (W)arning (E)rror
+  // #define VIEWER_TYPE_INPUT_STREAM g_input_stream_get_type()        //          O        E
+  // #define VIEWER_TYPE_INPUT_STREAM g_filter_input_stream_get_type() //          O        E
+  // #define VIEWER_TYPE_INPUT_STREAM g_file_input_stream_get_type()   //          O        O
+  // #define VIEWER_TYPE_INPUT_STREAM g_memory_input_stream_get_type() //          O        O
+  // #define VIEWER_TYPE_INPUT_STREAM g_unix_input_stream_get_type()   //          W        E
 
+  // #define VIEWER_TYPE_INPUT_STREAM G_TYPE_INPUT_STREAM
+  #define VIEWER_TYPE_INPUT_STREAM G_TYPE_FILE_INPUT_STREAM
   priv->input_stream=g_object_new(VIEWER_TYPE_INPUT_STREAM,NULL);
-  priv->filename = NULL /* would be set as a property */;
 
 }
 
-void viewer_file_open(ViewerFile *const self,GError *const *const error)
-{
+void viewer_file_open(ViewerFile *const self,const GError *const *const error){
   g_return_if_fail(VIEWER_IS_FILE(self));
   g_return_if_fail(!error||!(*error));
   /* do stuff here. */
