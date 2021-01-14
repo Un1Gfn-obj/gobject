@@ -2,7 +2,7 @@
 
 int main(){
 
-  viewer_file_get_type();
+  // viewer_file_get_type();
 
   // #ifdef F
   // struct _ViewerFile t1={};

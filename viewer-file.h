@@ -4,18 +4,17 @@
 #define __VIEWER_FILE_H__
 
 #include <glib-object.h>
+#include "./def.h"
 
 G_BEGIN_DECLS
 
 // Type
 #define VIEWER_TYPE_FILE viewer_file_get_type()
 
-#ifdef D
-G_DECLARE_DERIVABLE_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
-#elif defined F
+#ifdef F
 G_DECLARE_FINAL_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
-#else
-#error
+#elif defined D
+G_DECLARE_DERIVABLE_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
 #endif
 
 struct _ViewerFileClass {
@@ -33,6 +32,7 @@ struct _ViewerFileClass {
 
 // Methods
 ViewerFile *viewer_file_new();
+void viewer_file_open(ViewerFile *const,GError *const *const);
 
 G_END_DECLS
 
