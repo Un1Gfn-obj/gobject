@@ -4,18 +4,13 @@
 #define __VIEWER_FILE_H__
 
 #include <glib-object.h>
-#include "./def.h"
 
 G_BEGIN_DECLS
 
 // Type
 #define VIEWER_TYPE_FILE viewer_file_get_type()
-
-#ifdef F
 G_DECLARE_FINAL_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
-#elif defined D
-G_DECLARE_DERIVABLE_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
-#endif
+// G_DECLARE_DERIVABLE_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
 
 struct _ViewerFileClass {
 

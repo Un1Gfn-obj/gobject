@@ -1,6 +1,6 @@
 # https://developer.gnome.org/gobject/2.66/
 
-default-empty: ;
+default: main.out;
 
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-builtin-variables
@@ -23,17 +23,7 @@ LDLIBS:=$(shell pkg-config --libs gobject-2.0,gio-unix-2.0)
 # %.o: %.c ; $(CC) -c $(CFLAGS) -o $@ $<
 # viewer-file.o:
 
-fn.out: CFLAGS+=-DF -DN
-fp.out: CFLAGS+=-DF -DP
-dn.out: CFLAGS+=-DN -DN
-dp.out: CFLAGS+=-DN -DP
-
-# The first one becomes the default target
-fn.out \
-fp.out \
-dn.out \
-dp.out \
-: main.c viewer-file.c viewer-file.h
+main.out: main.c viewer-file.c viewer-file.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.c , $^ ) $(LDLIBS)
 
 # %.i: viewer-file.c viewer-file.h; $(CC) -E $(CFLAGS) -o $@ $(filter %.c , $^ )
