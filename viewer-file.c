@@ -71,11 +71,12 @@ static void viewer_file_set_property(
   case PROP_FILENAME:
     g_free(self->filename);
     self->filename=g_value_dup_string(value);
-    g_print("filename: %s\n", self->filename);
+    A:;
+    g_print((self->filename)?"setting filename to %s\n":"setting filename to %p\n",self->filename);
     break;
   case PROP_ZOOM_LEVEL:
     self->zoom_level=g_value_get_uint(value);
-    g_print("zoom level: %u\n", self->zoom_level);
+    g_print("setting zoom level to %u\n", self->zoom_level);
     break;
   default:
     /* We don't have any other property... */
@@ -119,14 +120,14 @@ static void viewer_file_class_init(ViewerFileClass *klass){
   obj_properties[PROP_FILENAME]=g_param_spec_string(
     "filename","Filename","Name of the file to load and display from.",
     NULL  /* default value */,
-    G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE
+    G_PARAM_CONSTRUCT | G_PARAM_READWRITE // https://developer.gnome.org/gobject/stable/gobject-GParamSpec.html#GParamFlags
   );
   obj_properties[PROP_ZOOM_LEVEL]=g_param_spec_uint(
     "zoom-level","Zoom level","Zoom level to view the file at.",
     0  /* minimum value */,
     10 /* maximum value */,
     2  /* default value */,
-    G_PARAM_READWRITE
+    G_PARAM_CONSTRUCT | G_PARAM_READWRITE // https://developer.gnome.org/gobject/stable/gobject-GParamSpec.html#GParamFlags
   );
   g_object_class_install_properties(object_class,N_PROPERTIES,obj_properties);
 
@@ -135,8 +136,6 @@ static void viewer_file_class_init(ViewerFileClass *klass){
 /* initialize all public and private members to reasonable default values.
  * They are all automatically initialized to 0 to begin with. */
 static void viewer_file_init(ViewerFile *const self){
-
-  ViewerFilePrivate *priv=viewer_file_get_instance_private(self);
 
   //                                                                   //   compile-time runtime (O)K (W)arning (E)rror
   // #define VIEWER_TYPE_INPUT_STREAM g_input_stream_get_type()        //          O        E
@@ -147,7 +146,7 @@ static void viewer_file_init(ViewerFile *const self){
 
   // #define VIEWER_TYPE_INPUT_STREAM G_TYPE_INPUT_STREAM
   #define VIEWER_TYPE_INPUT_STREAM G_TYPE_FILE_INPUT_STREAM
-  priv->input_stream=g_object_new(VIEWER_TYPE_INPUT_STREAM,NULL);
+  ((ViewerFilePrivate*)viewer_file_get_instance_private(self))->input_stream=g_object_new(VIEWER_TYPE_INPUT_STREAM,NULL);
 
 }
 
