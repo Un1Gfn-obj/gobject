@@ -71,7 +71,7 @@ static void viewer_file_set_property(
   case PROP_FILENAME:
     g_free(self->filename);
     self->filename=g_value_dup_string(value);
-    A:;
+    // A:; // Label
     g_print((self->filename)?"setting filename to %s\n":"setting filename to %p\n",self->filename);
     break;
   case PROP_ZOOM_LEVEL:

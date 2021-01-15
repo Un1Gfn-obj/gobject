@@ -38,7 +38,7 @@ void getv() {
   g_value_init(&(arr[1]),G_TYPE_UINT);
   g_object_getv(G_OBJECT(file),
     (guint)2,
-    (const char *[2]){"filename","zoom-level"}, // https://cdecl.org/?q=cast+a+into+array+2+of+pointer+to+const+char
+    (const gchar *[2]){"filename","zoom-level"}, // https://cdecl.org/?q=cast+a+into+array+2+of+pointer+to+const+char
     arr
   );
   g_print("filename=%s\n",g_value_get_string(&(arr[0])));
@@ -47,15 +47,49 @@ void getv() {
   g_value_unset(&(arr[1]));
 }
 
-int main(){
+void setp(const gchar *const s,const guint u){
+  GValue s2=G_VALUE_INIT;
+  GValue u2=G_VALUE_INIT;
+  g_value_init(&s2,G_TYPE_STRING);
+  g_value_init(&u2,G_TYPE_UINT);
+  // g_value_set_string(&s2,s);
+  g_value_set_static_string(&s2,s);
+  g_value_set_uint(          &u2,u);
+  g_object_set_property(G_OBJECT(file),"filename",&s2);
+  g_object_set_property(G_OBJECT(file),"zoom-level",&u2);
+  g_value_unset(&s2);
+  g_value_unset(&u2);
+}
 
-  // typedef int A,*B;
+void sets(const gchar *const s,const guint u){
+  g_object_set(G_OBJECT(file),
+    "filename",s, 
+    "zoom-level",u, 
+  NULL);
+}
+
+void setv(const gchar *const s,const guint u){
+  GValue arr[2]={};
+  g_value_init(&(arr[0]),G_TYPE_STRING);
+  g_value_init(&(arr[1]),G_TYPE_UINT);
+  g_value_set_static_string(&(arr[0]),s);
+  g_value_set_uint(&(arr[1]),u);
+  g_object_setv(G_OBJECT(file),
+    (guint)2,
+    (const gchar *[2]){"filename","zoom-level"}, // https://cdecl.org/?q=cast+a+into+array+2+of+pointer+to+const+char
+    arr
+  );
+}
+
+// void r();
+
+int main(){
 
   // r();
 
   g_print("\n");
   // g_print("pid: %d\n",getpid());
-  g_print("Default\n");
+  g_print("default:\n");
   file=g_object_new(VIEWER_TYPE_FILE,NULL);
   g_return_val_if_fail(
     file &&
@@ -64,47 +98,38 @@ int main(){
   ,-1);
   g_print("\n");
 
-  g_object_set(G_OBJECT(file),
-    "zoom-level",(guint)6, 
-    "filename","/dev/null", 
-  NULL);
-  g_print("\n");
-
+  setp("/dev/stdin",0);
   getp();g_print("\n");
+  sets("/dev/stdout",1);
   gets();g_print("\n");
+  setv("/dev/stderr",2);
   getv();g_print("\n");
 
-  // g_object_setv (GObject *object,
-  //                guint n_properties,
-  //                const gchar *names[],
-  //                const GValue values[]);
-
-  /*GValue schar=G_VALUE_INIT;
+  g_print("g_value_transform:\n");
+  GValue schar=G_VALUE_INIT;
   g_value_init(&schar,G_TYPE_CHAR);
   g_value_set_schar(&schar,3);
   g_object_set_property(G_OBJECT(file),"zoom-level",&schar);
   g_value_unset(&schar);
-  SHOW_ZOOM_LEVEL();
-  g_print("\n");*/
+  gets();
+  g_print("\n");
 
-  /*GValue ui=G_VALUE_INIT;
+  GValue ui=G_VALUE_INIT;
   g_value_init(&ui,G_TYPE_UINT);
 
-  g_value_set_uint(&ui,7);
-  g_object_set_property(G_OBJECT(file),"zoom-level",&ui);
-  SHOW_ZOOM_LEVEL();
-
+  g_print("out of range:\n");
   g_value_set_uint(&ui,11);
   g_object_set_property(G_OBJECT(file),"zoom-level",&ui);
-  SHOW_ZOOM_LEVEL();
+  gets();
+  g_print("\n");
 
-  g_object_set_property(G_OBJECT(file),"non-exist-property",&ui);
-
-  g_value_unset(&ui);*/
+  g_print("non-exist property:\n");
+  g_object_set_property(G_OBJECT(file),"cheeki-breeki",&ui);
+  g_value_unset(&ui);
+  g_print("\n");
 
   g_object_unref(file);
   file=NULL;
-  g_print("\n");
   return 0;
 
 }
