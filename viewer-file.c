@@ -15,6 +15,8 @@ typedef struct _ViewerFilePrivate {
 // Type implementation
 G_DEFINE_TYPE_WITH_PRIVATE(ViewerFile,viewer_file,G_TYPE_OBJECT)
 
+// Destruction
+
 static void viewer_file_dispose(GObject *const gobject){
   /* In dispose(), you are supposed to free all types referenced from this
    * object which might themselves hold a reference to self. Generally,
@@ -48,6 +50,8 @@ static void viewer_file_finalize(GObject *const gobject){
    */
   G_OBJECT_CLASS(viewer_file_parent_class)->finalize(gobject);
 }
+
+// Properties
 
 typedef enum _ViewerFileProperty {
   PROP_FILENAME=1,
@@ -104,15 +108,23 @@ static void viewer_file_get_property(
   }
 }
 
-static void viewer_file_class_init(ViewerFileClass *klass){
+// Construction & methods
+
+static ViewerFile *viewer_file_real_close(ViewerFile *const self,const GError *const *const error){
+  // Default implementation for the virtual method.
+  g_print("closed\n");
+  return self;
+}
+
+static void viewer_file_class_init(ViewerFileClass *const klass){
 
   GObjectClass *object_class=G_OBJECT_CLASS(klass);
 
-  // Object destruction
+  // Destruction
   object_class->dispose=viewer_file_dispose;
   object_class->finalize=viewer_file_finalize;
 
-  // Object properties
+  // Properties
   object_class->set_property=viewer_file_set_property;
   object_class->get_property=viewer_file_get_property;
   obj_properties[PROP_FILENAME]=g_param_spec_string(
@@ -129,10 +141,14 @@ static void viewer_file_class_init(ViewerFileClass *klass){
   );
   g_object_class_install_properties(object_class,N_PROPERTIES,obj_properties);
 
+  // Pure virtfunc (mandates implementation in children)
+  klass->open=NULL;
+
+  // Mere virtfunc
+  klass->close=viewer_file_real_close;
+
 }
 
-/* initialize all public and private members to reasonable default values.
- * They are all automatically initialized to 0 to begin with. */
 static void viewer_file_init(ViewerFile *const self){
 
   //                                                                   //   compile-time runtime (O)K (W)arning (E)rror
@@ -150,9 +166,38 @@ static void viewer_file_init(ViewerFile *const self){
 
 }
 
+// Virtfunc redirect implementation
 ViewerFile *viewer_file_open(ViewerFile *const self,const GError *const *const error){
-  g_return_val_if_fail( VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
-  // g_return_if_fail( VIEWER_IS_FILE(self) && !(error&&(*error)) );
-  // do stuff here.
+
+  g_return_val_if_fail( self && VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
+
+  ViewerFileClass *const klass=VIEWER_FILE_GET_CLASS(self);
+  /* if the method is purely virtual, then it is a good idea to
+   * check that it has been overridden before calling it, and,
+   * depending on the intent of the class, either ignore it silently
+   * or warn the user.
+   */
+  g_return_val_if_fail( klass->open!=NULL ,self);
+  klass->open(self,error);
+
   return self;
+
+}
+
+// Virtfunc redirect implementation
+ViewerFile *viewer_file_close(ViewerFile *const self,const GError *const *const error){
+
+  g_return_val_if_fail( self && VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
+
+  ViewerFileClass *const klass=VIEWER_FILE_GET_CLASS(self);
+  /* if the method is purely virtual, then it is a good idea to
+   * check that it has been overridden before calling it, and,
+   * depending on the intent of the class, either ignore it silently
+   * or warn the user.
+   */
+  g_return_val_if_fail( klass->close!=NULL ,self);
+  klass->close(self,error);
+
+  return self;
+
 }
