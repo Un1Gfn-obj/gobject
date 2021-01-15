@@ -15,6 +15,8 @@ typedef struct _ViewerFilePrivate {
 // Type implementation
 G_DEFINE_TYPE_WITH_PRIVATE(ViewerFile,viewer_file,G_TYPE_OBJECT)
 
+// Destruction
+
 static void viewer_file_dispose(GObject *const gobject){
   /* In dispose(), you are supposed to free all types referenced from this
    * object which might themselves hold a reference to self. Generally,
@@ -48,6 +50,8 @@ static void viewer_file_finalize(GObject *const gobject){
    */
   G_OBJECT_CLASS(viewer_file_parent_class)->finalize(gobject);
 }
+
+// Properties
 
 typedef enum _ViewerFileProperty {
   PROP_FILENAME=1,
@@ -104,15 +108,51 @@ static void viewer_file_get_property(
   }
 }
 
-static void viewer_file_class_init(ViewerFileClass *klass){
+// Construction & methods
+
+// Mere virtfunc real implementation
+static ViewerFile *viewer_file_real_close(ViewerFile *const self,const GError *const *const error){
+  // Default implementation for the virtual method.
+  g_print("closed\n");
+  return self;
+}
+
+// Mere virtfunc real implementation (private)
+static gboolean viewer_file_real_can_memory_map(ViewerFile *const self){
+
+  const gchar *const filename=(
+    (ViewerFilePrivate*)viewer_file_get_instance_private(self)
+  )->filename;
+
+  // g_print("A\n");
+  if(!filename)
+    return FALSE;
+  // g_print("%s\n",filename);
+
+  // g_print("B\n");
+  const gsize l=strlen(filename);
+  const gchar *fileuri="file:///";
+  const gsize fileuri_len=strlen(fileuri);
+  // g_print("%zu\n",l);
+  if(
+    (l>=1&&filename[0]=='/')||
+    (l>=fileuri_len&&0==strncmp(filename,fileuri,fileuri_len))
+  )
+    return TRUE;
+
+  // g_print("C\n");
+  return FALSE;
+}
+
+static void viewer_file_class_init(ViewerFileClass *const klass){
 
   GObjectClass *object_class=G_OBJECT_CLASS(klass);
 
-  // Object destruction
+  // Destruction
   object_class->dispose=viewer_file_dispose;
   object_class->finalize=viewer_file_finalize;
 
-  // Object properties
+  // Properties
   object_class->set_property=viewer_file_set_property;
   object_class->get_property=viewer_file_get_property;
   obj_properties[PROP_FILENAME]=g_param_spec_string(
@@ -129,10 +169,14 @@ static void viewer_file_class_init(ViewerFileClass *klass){
   );
   g_object_class_install_properties(object_class,N_PROPERTIES,obj_properties);
 
+  // Mere virtfunc
+  klass->close=viewer_file_real_close;
+
+  // Mere virtfunc (private)
+  klass->can_memory_map=viewer_file_real_can_memory_map;
+
 }
 
-/* initialize all public and private members to reasonable default values.
- * They are all automatically initialized to 0 to begin with. */
 static void viewer_file_init(ViewerFile *const self){
 
   //                                                                   //   compile-time runtime (O)K (W)arning (E)rror
@@ -150,9 +194,25 @@ static void viewer_file_init(ViewerFile *const self){
 
 }
 
+// Mere virtfunc redirect implementation (private)
+static gboolean viewer_file_can_memory_map (ViewerFile *self){
+  g_return_val_if_fail( self && VIEWER_IS_FILE(self) ,FALSE);
+  return VIEWER_FILE_GET_CLASS(self)->can_memory_map(self);
+}
+
+// Public nonvirtfunc real implementation
 ViewerFile *viewer_file_open(ViewerFile *const self,const GError *const *const error){
   g_return_val_if_fail( VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
-  // g_return_if_fail( VIEWER_IS_FILE(self) && !(error&&(*error)) );
-  // do stuff here.
+  if(viewer_file_can_memory_map(self))
+    g_print("loading the file w/ memory mapped I/O...\n");
+  else
+    g_print("fall back to streaming I/O to load the file..\n");
+  return self;
+}
+
+// Mere virtfunc redirect implementation
+ViewerFile *viewer_file_close(ViewerFile *const self,const GError *const *const error){
+  g_return_val_if_fail( self && VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
+  ((ViewerFileClass*)VIEWER_FILE_GET_CLASS(self))->close(self,error);
   return self;
 }

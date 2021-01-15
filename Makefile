@@ -30,14 +30,20 @@ viewer-file.c.check:
 # %.o: %.c ; $(CC) -c $(CFLAGS) -o $@ $<
 # viewer-file.o:
 
-main.out: main.c viewer-file.c viewer-file.h
+main.out: ginputstream.c new-get-set.c main.c viewer-file.c viewer-file.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.c , $^ ) $(LDLIBS)
 
 %.i: %.c; $(CC) -E $(CFLAGS) -o $@ $<
 viewer-file.i:
 
-clean:
+clean: 
 	@rm -fv *.s *.o *.out *.i # *.h.gch
 
 # https://developer.gnome.org/glib/stable/glib-running.html
 # env G_ENABLE_DIAGNOSTIC=1 derivable.out
+
+# main: $(foreach i, \
+#   viewer-file new-get-set ginputstream, \
+# $(foreach j, \
+#   c h, \
+# $(i).$(j)))
