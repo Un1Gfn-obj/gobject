@@ -27,10 +27,14 @@ typedef struct _ViewerFileClass {
 
 } ViewerFileClass;
 
-ViewerFile *viewer_file_new();
+// Not yet implemented
+// ViewerFile *viewer_file_new();
 
 // Pure virtfunc redirect prototype
 ViewerFile *viewer_file_open(ViewerFile *const,const GError *const *const);
+
+// Mere virtfunc redirect prototype
+ViewerFile *viewer_file_close(ViewerFile *const,const GError *const *const);
 
 G_END_DECLS
 
