@@ -5,7 +5,6 @@
 
 // Private structure
 typedef struct _ViewerFilePrivate {
-  // Private data for derivable (impossible for final?)
   GInputStream *input_stream; // Private
 } ViewerFilePrivate;
 
@@ -16,12 +15,8 @@ typedef struct _ViewerFile {
   guint zoom_level; // Public
 } ViewerFile;
 
-// Derivable types may have both
 // G_DEFINE_TYPE(ViewerFile,viewer_file,G_TYPE_OBJECT) // Remove ViewerFilePrivate
-G_DEFINE_TYPE_WITH_PRIVATE(ViewerFile,viewer_file,G_TYPE_OBJECT) // Keep ViewerFilePrivate
-
-// Final types may not have private structure
-// G_DEFINE_TYPE(ViewerFile,viewer_file,G_TYPE_OBJECT) // Remove ViewerFilePrivate
+G_DEFINE_TYPE_WITH_PRIVATE(ViewerFile,viewer_file,G_TYPE_OBJECT) // Keep ViewerFilePrivate // Final types may not have private structure
 
 static void viewer_file_dispose(GObject *const gobject){
   ViewerFilePrivate *const priv=viewer_file_get_instance_private(VIEWER_FILE(gobject));
@@ -72,7 +67,8 @@ static void viewer_file_set_property(
     g_free(self->filename);
     self->filename=g_value_dup_string(value);
     // A:; // Label
-    g_print((self->filename)?"setting filename to %s\n":"setting filename to %p\n",self->filename);
+    // g_print((self->filename)?"setting filename to %s\n":"setting filename to %p\n",self->filename);
+    g_print("setting filename to %s\n",self->filename);
     break;
   case PROP_ZOOM_LEVEL:
     self->zoom_level=g_value_get_uint(value);
@@ -150,8 +146,9 @@ static void viewer_file_init(ViewerFile *const self){
 
 }
 
-void viewer_file_open(ViewerFile *const self,const GError *const *const error){
-  g_return_if_fail(VIEWER_IS_FILE(self));
-  g_return_if_fail(!error||!(*error));
-  /* do stuff here. */
+ViewerFile *viewer_file_open(ViewerFile *const self,const GError *const *const error){
+  g_return_val_if_fail( VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
+  // g_return_if_fail( VIEWER_IS_FILE(self) && !(error&&(*error)) );
+  // do stuff here.
+  return self;
 }

@@ -7,7 +7,13 @@ MAKEFLAGS += --no-builtin-variables
 
 CC:=gcc
 
-CFLAGS:=-std=gnu11 -g -O0 -Wall -Wextra -Wno-unused-parameter -Winline $(shell pkg-config --cflags gobject-2.0,gio-unix-2.0) # -fmax-errors=1
+# https://developer.gnome.org/glib/stable/glib-Version-Information.html
+# https://developer.gnome.org/glib/stable/glib-compiling.html
+CFLAGS:=\
+-std=gnu11 -g -O0 -Wall -Wextra -Wno-unused-parameter -Winline -Wdeprecated-declarations \
+$(shell pkg-config --cflags gobject-2.0,gio-unix-2.0) \
+-DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_66 \
+-DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_66
 
 LDLIBS:=$(shell pkg-config --libs gobject-2.0,gio-unix-2.0)
 
@@ -17,8 +23,9 @@ LDLIBS:=$(shell pkg-config --libs gobject-2.0,gio-unix-2.0)
 # function_foo.o: function_foo.c; $(CC) -c $(PRIMFLAGS) -o $@ $<
 # make -B function_foo.o && objdump -d function_foo.o
 
-# %.check: % ; $(CC) $(CFLAGS) -fsyntax-only $<
-# viewer-file.h.check:
+%.check: % ; $(CC) $(CFLAGS) -fsyntax-only $<
+viewer-file.h.check:
+viewer-file.c.check:
 
 # %.o: %.c ; $(CC) -c $(CFLAGS) -o $@ $<
 # viewer-file.o:

@@ -12,22 +12,21 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
 // G_DECLARE_DERIVABLE_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
 
-struct _ViewerFileClass {
+/*typedef struct _ViewerFileClass {
 
   GObjectClass parent_class;
 
   // Class virtual function fields.
-  // declare open as pointer to function (ViewerFile*, GError**) returning void
-  void(*open)(ViewerFile*,GError**);
+  ViewerFile *((*open)(ViewerFile*,GError**));
 
   // Padding to allow adding up to 12 new virtual functions w/o breaking ABI
   gpointer padding[12];
 
-};
+} ViewerFileClass;*/
 
-// Methods
+// Public methods
 ViewerFile *viewer_file_new();
-void viewer_file_open(ViewerFile *const,const GError *const *const);
+ViewerFile *viewer_file_open(ViewerFile *const,const GError *const *const);
 
 G_END_DECLS
 
