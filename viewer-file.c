@@ -15,8 +15,8 @@ typedef struct _ViewerFile {
   guint zoom_level; // Public
 } ViewerFile;
 
-// G_DEFINE_TYPE(ViewerFile,viewer_file,G_TYPE_OBJECT) // Remove ViewerFilePrivate
-G_DEFINE_TYPE_WITH_PRIVATE(ViewerFile,viewer_file,G_TYPE_OBJECT) // Keep ViewerFilePrivate // Final types may not have private structure
+// Type implementation
+G_DEFINE_TYPE_WITH_PRIVATE(ViewerFile,viewer_file,G_TYPE_OBJECT)
 
 static void viewer_file_dispose(GObject *const gobject){
   ViewerFilePrivate *const priv=viewer_file_get_instance_private(VIEWER_FILE(gobject));

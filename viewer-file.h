@@ -7,22 +7,12 @@
 
 G_BEGIN_DECLS
 
-// Type
 #define VIEWER_TYPE_FILE viewer_file_get_type()
+
+// Final type
 G_DECLARE_FINAL_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
-// G_DECLARE_DERIVABLE_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
 
-/*typedef struct _ViewerFileClass {
-
-  GObjectClass parent_class;
-
-  // Class virtual function fields.
-  ViewerFile *((*open)(ViewerFile*,GError**));
-
-  // Padding to allow adding up to 12 new virtual functions w/o breaking ABI
-  gpointer padding[12];
-
-} ViewerFileClass;*/
+// No ViewerFileClass for final type
 
 // Public methods
 ViewerFile *viewer_file_new();
