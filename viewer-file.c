@@ -5,21 +5,17 @@
 
 // Private structure
 typedef struct _ViewerFilePrivate {
+  gchar *filename; // Private
+  guint zoom_level; // Private
   GInputStream *input_stream; // Private
 } ViewerFilePrivate;
 
-// Instance structure
-typedef struct _ViewerFile {
-  GObject parent_instance;
-  gchar *filename; // Public
-  guint zoom_level; // Public
-} ViewerFile;
+// No instance structure for derivable type
 
-// G_DEFINE_TYPE(ViewerFile,viewer_file,G_TYPE_OBJECT) // Remove ViewerFilePrivate
-G_DEFINE_TYPE_WITH_PRIVATE(ViewerFile,viewer_file,G_TYPE_OBJECT) // Keep ViewerFilePrivate // Final types may not have private structure
+// Type implementation
+G_DEFINE_TYPE_WITH_PRIVATE(ViewerFile,viewer_file,G_TYPE_OBJECT)
 
 static void viewer_file_dispose(GObject *const gobject){
-  ViewerFilePrivate *const priv=viewer_file_get_instance_private(VIEWER_FILE(gobject));
   /* In dispose(), you are supposed to free all types referenced from this
    * object which might themselves hold a reference to self. Generally,
    * the most simple solution is to unref all members on which you own a 
@@ -29,7 +25,13 @@ static void viewer_file_dispose(GObject *const gobject){
    * calling g_object_unref() on an invalid GObject by setting the member
    * NULL; g_clear_object() does this for us.
    */
-  g_clear_object(&(priv->input_stream));
+  g_clear_object(
+    &(
+      (
+        (ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(gobject))
+      )->input_stream
+    )
+  );
   /* Always chain up to the parent class; there is no need to check if
    * the parent class implements the dispose() virtual function: it is
    * always guaranteed to do so
@@ -38,9 +40,9 @@ static void viewer_file_dispose(GObject *const gobject){
 }
 
 static void viewer_file_finalize(GObject *const gobject){
-  ViewerFile *self=VIEWER_FILE(gobject);
-  g_free(self->filename);
-  self->filename=NULL;
+  g_free((
+    (ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(gobject))
+  )->filename);
   /* Always chain up to the parent class; as with dispose(), finalize()
    * is guaranteed to exist on the parent's class virtual function table
    */
@@ -61,18 +63,18 @@ static void viewer_file_set_property(
   const GValue *const value,
   GParamSpec *const pspec
 ){
-  ViewerFile *self=VIEWER_FILE(object);
+  ViewerFilePrivate *const priv=viewer_file_get_instance_private(VIEWER_FILE(object));
   switch((ViewerFileProperty)property_id){
   case PROP_FILENAME:
-    g_free(self->filename);
-    self->filename=g_value_dup_string(value);
+    g_free(priv->filename);
+    priv->filename=g_value_dup_string(value);
     // A:; // Label
-    // g_print((self->filename)?"setting filename to %s\n":"setting filename to %p\n",self->filename);
-    g_print("setting filename to %s\n",self->filename);
+    // g_print((priv->filename)?"setting filename to %s\n":"setting filename to %p\n",priv->filename);
+    g_print("setting filename to %s\n",priv->filename);
     break;
   case PROP_ZOOM_LEVEL:
-    self->zoom_level=g_value_get_uint(value);
-    g_print("setting zoom level to %u\n", self->zoom_level);
+    priv->zoom_level=g_value_get_uint(value);
+    g_print("setting zoom level to %u\n", priv->zoom_level);
     break;
   default:
     /* We don't have any other property... */
@@ -87,13 +89,13 @@ static void viewer_file_get_property(
   GValue *const value,
   GParamSpec *const pspec
 ){
-  ViewerFile *self=VIEWER_FILE (object);
+  ViewerFilePrivate *const priv=viewer_file_get_instance_private(VIEWER_FILE(object));
   switch ((ViewerFileProperty)property_id){
   case PROP_FILENAME:
-    g_value_set_string(value, self->filename);
+    g_value_set_string(value, priv->filename);
     break;
   case PROP_ZOOM_LEVEL:
-    g_value_set_uint(value, self->zoom_level);
+    g_value_set_uint(value, priv->zoom_level);
     break;
   default:
     /* We don't have any other property... */
@@ -142,7 +144,9 @@ static void viewer_file_init(ViewerFile *const self){
 
   // #define VIEWER_TYPE_INPUT_STREAM G_TYPE_INPUT_STREAM
   #define VIEWER_TYPE_INPUT_STREAM G_TYPE_FILE_INPUT_STREAM
-  ((ViewerFilePrivate*)viewer_file_get_instance_private(self))->input_stream=g_object_new(VIEWER_TYPE_INPUT_STREAM,NULL);
+  (
+    (ViewerFilePrivate*)viewer_file_get_instance_private(self)
+  )->input_stream=g_object_new(VIEWER_TYPE_INPUT_STREAM,NULL);
 
 }
 
