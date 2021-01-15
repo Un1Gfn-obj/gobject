@@ -1,0 +1,12 @@
+mere virtual public
+
+[header]
+  [class_structure]
+    prototype
+  redirect prototype
+
+[source]
+  base(real) implementation
+  [class_init()]
+    virtfunc pointer <- base(real) implementation
+  redirect implementation

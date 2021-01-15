@@ -1,0 +1,7 @@
+non virtual public
+
+[header]
+  prototype
+
+[source]
+  implementation
