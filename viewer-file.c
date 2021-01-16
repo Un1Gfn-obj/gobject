@@ -110,6 +110,7 @@ static void viewer_file_get_property(
 
 // Construction & methods
 
+// Mere virtfunc real implementation
 static ViewerFile *viewer_file_real_close(ViewerFile *const self,const GError *const *const error){
   // Default implementation for the virtual method.
   g_print("closed\n");
@@ -166,28 +167,28 @@ static void viewer_file_init(ViewerFile *const self){
 
 }
 
-// Virtfunc redirect implementation
+// Pure virtfunc redirect implementation
 ViewerFile *viewer_file_open(ViewerFile *const self,const GError *const *const error){
 
-  g_return_val_if_fail( self && VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
+  g_assert( self && VIEWER_IS_FILE(self) && !(error&&(*error)) );
 
   ViewerFileClass *const klass=VIEWER_FILE_GET_CLASS(self);
-  /* if the method is purely virtual, then it is a good idea to
-   * check that it has been overridden before calling it, and,
-   * depending on the intent of the class, either ignore it silently
-   * or warn the user.
-   */
-  g_return_val_if_fail( klass->open!=NULL ,self);
+
+  if(klass->open==NULL){
+    g_error("pure virtual function open() not overriden\n");
+    g_assert_not_reached();
+  }
+
   klass->open(self,error);
 
   return self;
 
 }
 
-// Virtfunc redirect implementation
+// Mere virtfunc redirect implementation
 ViewerFile *viewer_file_close(ViewerFile *const self,const GError *const *const error){
 
-  g_return_val_if_fail( self && VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
+  g_assert( self && VIEWER_IS_FILE(self) && !(error&&(*error)) );
 
   ViewerFileClass *const klass=VIEWER_FILE_GET_CLASS(self);
   /* if the method is purely virtual, then it is a good idea to
@@ -195,7 +196,7 @@ ViewerFile *viewer_file_close(ViewerFile *const self,const GError *const *const 
    * depending on the intent of the class, either ignore it silently
    * or warn the user.
    */
-  g_return_val_if_fail( klass->close!=NULL ,self);
+  g_assert( klass->close!=NULL );
   klass->close(self,error);
 
   return self;

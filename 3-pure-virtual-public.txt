@@ -1,0 +1,11 @@
+pure virtual public
+
+[header]
+  [class_structure]
+    prototype
+  redirect prototype
+
+[source]
+  [class_init()]
+    virtfunc pointer <- NULL
+  redirect implementation w/ overriding check

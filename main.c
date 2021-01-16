@@ -10,7 +10,7 @@
 static void open_close(){
 
   ViewerFile *const file=g_object_new(VIEWER_TYPE_FILE,NULL);
-  g_return_if_fail(file);
+  g_assert(file);
 
   const GError *err=NULL;
 

@@ -53,8 +53,8 @@ static void set1B1(const gchar *const s,const guint u){
 
 static void setALL(const gchar *const s,const guint u){
   g_object_set(G_OBJECT(file),
-    "filename",s, 
-    "zoom-level",u, 
+    "filename",s,
+    "zoom-level",u,
   NULL);
 }
 
@@ -70,7 +70,7 @@ static void setARR(const gchar *const s,const guint u){
 }
 
 static void newALL(const gchar *const s,const guint u){
-  g_return_if_fail(file==NULL);
+  g_assert(file);
   file=(ViewerFile*)g_object_new(VIEWER_TYPE_FILE,
     "filename",s, 
     "zoom-level",u, 
@@ -78,7 +78,7 @@ static void newALL(const gchar *const s,const guint u){
 }
 
 static void newARR(const gchar *const s,const guint u){
-  g_return_if_fail(file==NULL);
+  g_assert(file);
   GValue arr[2]={};
   g_value_set_static_string(g_value_init(&(arr[0]),G_TYPE_STRING),s);
   g_value_set_uint(g_value_init(&(arr[1]),G_TYPE_UINT),u);
@@ -100,7 +100,7 @@ void new_get_set(){
 
   g_print("default new:\n");
   file=g_object_new(VIEWER_TYPE_FILE,NULL);
-  g_return_if_fail(
+  g_assert(
     file &&
     G_IS_OBJECT(file) &&
     0==g_strcmp0("ViewerFile",G_OBJECT_TYPE_NAME(file)) &&

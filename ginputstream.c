@@ -6,7 +6,7 @@ void ginputstream(){
   const gssize sz=1024;
 
   GInputStream *stream=g_unix_input_stream_new(STDIN_FILENO,FALSE);
-  g_return_if_fail(!g_input_stream_is_closed(stream));
+  g_assert(!g_input_stream_is_closed(stream));
 
   guint8 *buffer=g_malloc0((gsize)sz+1);
   GError *error=NULL;
@@ -18,7 +18,7 @@ void ginputstream(){
     NULL,
     &error
   );
-  g_return_if_fail( !error && 1<=n && n<=sz );
+  g_assert( !error && 1<=n && n<=sz );
   buffer[n]='\0'; // Keep newline
   // buffer[n-1]='\0'; // Kill newline
 
@@ -35,7 +35,7 @@ void ginputstream(){
     NULL,
     &error
   );
-  g_return_if_fail(!error);
+  g_assert_no_error(error); 
   stream=NULL;
 
 }

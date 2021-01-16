@@ -28,6 +28,7 @@ typedef struct _ViewerFileClass {
 } ViewerFileClass;
 
 // Not yet implemented
+// Public nonvirtfunc real prototype
 // ViewerFile *viewer_file_new();
 
 // Pure virtfunc redirect prototype
