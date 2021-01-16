@@ -26,10 +26,13 @@ typedef struct _ViewerFileClass {
 
 } ViewerFileClass;
 
+// Not yet implemented
 // Public nonvirtfunc real prototype
-ViewerFile *viewer_file_new();
+// ViewerFile *viewer_file_new();
+
 // Public nonvirtfunc real prototype
 ViewerFile *viewer_file_open(ViewerFile *const,const GError *const *const);
+
 // Mere virtfunc redirect prototype
 ViewerFile *viewer_file_close(ViewerFile *const,const GError *const *const);
 

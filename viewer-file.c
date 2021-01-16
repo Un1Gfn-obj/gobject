@@ -196,13 +196,13 @@ static void viewer_file_init(ViewerFile *const self){
 
 // Mere virtfunc redirect implementation (private)
 static gboolean viewer_file_can_memory_map (ViewerFile *self){
-  g_return_val_if_fail( self && VIEWER_IS_FILE(self) ,FALSE);
+  g_assert( self && VIEWER_IS_FILE(self) );
   return VIEWER_FILE_GET_CLASS(self)->can_memory_map(self);
 }
 
 // Public nonvirtfunc real implementation
 ViewerFile *viewer_file_open(ViewerFile *const self,const GError *const *const error){
-  g_return_val_if_fail( VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
+  g_assert( VIEWER_IS_FILE(self) && !(error&&(*error)) );
   if(viewer_file_can_memory_map(self))
     g_print("loading the file w/ memory mapped I/O...\n");
   else
@@ -212,7 +212,7 @@ ViewerFile *viewer_file_open(ViewerFile *const self,const GError *const *const e
 
 // Mere virtfunc redirect implementation
 ViewerFile *viewer_file_close(ViewerFile *const self,const GError *const *const error){
-  g_return_val_if_fail( self && VIEWER_IS_FILE(self) && !(error&&(*error)) ,self);
+  g_assert( self && VIEWER_IS_FILE(self) && !(error&&(*error)) );
   ((ViewerFileClass*)VIEWER_FILE_GET_CLASS(self))->close(self,error);
   return self;
 }
