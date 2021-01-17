@@ -9,7 +9,12 @@ G_BEGIN_DECLS
 
 // Derivable type
 #define VIEWER_TYPE_FILE viewer_file_get_type()
-G_DECLARE_DERIVABLE_TYPE(ViewerFile,viewer_file,VIEWER,FILE,GObject)
+G_DECLARE_DERIVABLE_TYPE(
+  ViewerFile,
+  viewer_file,
+  VIEWER,FILE,
+  GObject
+)
 
 // Class structure for derivable type only
 typedef struct _ViewerFileClass {

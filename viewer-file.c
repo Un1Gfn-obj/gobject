@@ -13,7 +13,11 @@ typedef struct _ViewerFilePrivate {
 // No instance structure for derivable type
 
 // Type implementation
-G_DEFINE_TYPE_WITH_PRIVATE(ViewerFile,viewer_file,G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_PRIVATE(
+  ViewerFile,
+  viewer_file,
+  G_TYPE_OBJECT
+)
 
 // Destruction
 
@@ -38,6 +42,7 @@ static void viewer_file_dispose(GObject *const gobject){
    * the parent class implements the dispose() virtual function: it is
    * always guaranteed to do so
    */
+  g_print("viewer_file_dispose()\n");
   G_OBJECT_CLASS(viewer_file_parent_class)->dispose(gobject);
 }
 
@@ -48,6 +53,7 @@ static void viewer_file_finalize(GObject *const gobject){
   /* Always chain up to the parent class; as with dispose(), finalize()
    * is guaranteed to exist on the parent's class virtual function table
    */
+  g_print("viewer_file_finalize()\n");
   G_OBJECT_CLASS(viewer_file_parent_class)->finalize(gobject);
 }
 
@@ -113,11 +119,13 @@ static void viewer_file_get_property(
 // Mere virtfunc real implementation
 static ViewerFile *viewer_file_real_close(ViewerFile *const self,const GError *const *const error){
   // Default implementation for the virtual method.
-  g_print("closed\n");
+  g_print("viewer_file_real_close()\n");
   return self;
 }
 
 static void viewer_file_class_init(ViewerFileClass *const klass){
+
+  g_print("viewer_file_class_init()\n");
 
   GObjectClass *object_class=G_OBJECT_CLASS(klass);
 
@@ -152,6 +160,8 @@ static void viewer_file_class_init(ViewerFileClass *const klass){
 
 static void viewer_file_init(ViewerFile *const self){
 
+  g_print("viewer_file_init()\n");
+
   //                                                                   //   compile-time runtime (O)K (W)arning (E)rror
   // #define VIEWER_TYPE_INPUT_STREAM g_input_stream_get_type()        //          O        E
   // #define VIEWER_TYPE_INPUT_STREAM g_filter_input_stream_get_type() //          O        E
@@ -174,13 +184,10 @@ ViewerFile *viewer_file_open(ViewerFile *const self,const GError *const *const e
 
   ViewerFileClass *const klass=VIEWER_FILE_GET_CLASS(self);
 
-  if(klass->open==NULL){
+  if(klass->open==NULL)
     g_error("pure virtual function open() not overriden\n");
-    g_assert_not_reached();
-  }
 
   klass->open(self,error);
-
   return self;
 
 }

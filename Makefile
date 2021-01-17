@@ -7,11 +7,14 @@ MAKEFLAGS += --no-builtin-variables
 
 CC:=gcc
 
+              INC:=$(shell pkg-config --cflags-only-I gobject-2.0,gio-unix-2.0)
+CFLAGS:=$(INC) $(shell pkg-config --cflags-only-other gobject-2.0,gio-unix-2.0)
+
 # https://developer.gnome.org/glib/stable/glib-Version-Information.html
 # https://developer.gnome.org/glib/stable/glib-compiling.html
 CFLAGS:=\
 -std=gnu11 -g -O0 -Wall -Wextra -Wno-unused-parameter -Winline -Wdeprecated-declarations \
-$(shell pkg-config --cflags gobject-2.0,gio-unix-2.0) \
+$(CFLAGS) \
 -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_66 \
 -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_66
 
@@ -30,7 +33,11 @@ viewer-file.c.check:
 # %.o: %.c ; $(CC) -c $(CFLAGS) -o $@ $<
 # viewer-file.o:
 
-main.out: ginputstream.c new-get-set.c main.c viewer-file.c viewer-file.h
+main.out: ginputstream.c new-get-set.c main.c $(foreach i, \
+  viewer-file viewer-audio-file, \
+$(foreach j, \
+  c h, \
+$(i).$(j)))
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.c , $^ ) $(LDLIBS)
 
 %.i: %.c; $(CC) -E $(CFLAGS) -o $@ $<
@@ -39,11 +46,8 @@ viewer-file.i:
 clean: 
 	@rm -fv *.s *.o *.out *.i # *.h.gch
 
+cscope:
+	cscope $(INC) -1 $(id) $(file)
+
 # https://developer.gnome.org/glib/stable/glib-running.html
 # env G_ENABLE_DIAGNOSTIC=1 derivable.out
-
-# main: $(foreach i, \
-#   viewer-file new-get-set ginputstream, \
-# $(foreach j, \
-#   c h, \
-# $(i).$(j)))
