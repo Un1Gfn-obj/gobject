@@ -2,6 +2,7 @@
 
 #include <gio/gio.h> // GInputStream
 #include "./viewer-file.h"
+#include "./viewer-editable.h"
 
 // Private structure
 typedef struct _ViewerFilePrivate {
@@ -12,12 +13,24 @@ typedef struct _ViewerFilePrivate {
 
 // No instance structure for derivable type
 
-// Type implementation
-G_DEFINE_TYPE_WITH_PRIVATE(
+static void viewer_file_editable_interface_init(ViewerEditableInterface*);
+
+G_DEFINE_TYPE_WITH_CODE(
   ViewerFile,
   viewer_file,
-  G_TYPE_OBJECT
-)
+  G_TYPE_OBJECT,
+  G_ADD_PRIVATE(
+    ViewerFile
+  )
+  G_IMPLEMENT_INTERFACE(
+    VIEWER_TYPE_EDITABLE,
+    viewer_file_editable_interface_init
+  )
+)/*
+https://developer.gnome.org/gobject/stable/gobject-Type-Information.html#G-DEFINE-TYPE:CAPS
+G_DEFINE_TYPE() does the following:
+  [Please refer to viewer-audio-file.c]
+*/
 
 // Destruction
 
@@ -138,7 +151,7 @@ static void viewer_file_class_init(ViewerFileClass *const klass){
   object_class->get_property=viewer_file_get_property;
   obj_properties[PROP_FILENAME]=g_param_spec_string(
     "filename","Filename","Name of the file to load and display from.",
-    NULL  /* default value */,
+    "/dev/null"  /* default value */,
     G_PARAM_CONSTRUCT | G_PARAM_READWRITE // https://developer.gnome.org/gobject/stable/gobject-GParamSpec.html#GParamFlags
   );
   obj_properties[PROP_ZOOM_LEVEL]=g_param_spec_uint(
@@ -208,4 +221,39 @@ ViewerFile *viewer_file_close(ViewerFile *const self,const GError *const *const 
 
   return self;
 
+}
+
+// Interface ViewerEditable
+
+static void viewer_file_editable_save(ViewerFile *const self,GError *const *const error){
+  g_print(
+    "File implementation of editable interface save method: %s.\n",
+    ((ViewerFilePrivate*)viewer_file_get_instance_private(self))->filename
+  );
+}
+
+static void viewer_file_editable_undo(ViewerFile *const self,const guint n_steps){
+  g_print(
+    "File implementation of editable interface undo method: %s.\n",
+    ((ViewerFilePrivate*)viewer_file_get_instance_private(self))->filename
+  );
+}
+
+static void viewer_file_editable_redo(ViewerFile *const self,const guint n_steps){
+  g_print(
+    "File implementation of editable interface redo method: %s.\n",
+    ((ViewerFilePrivate*)viewer_file_get_instance_private(self))->filename
+  );
+}
+
+static void viewer_file_editable_interface_init(ViewerEditableInterface *iface){
+  g_print("viewer_file_editable_interface_init()\n");
+  #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+  // iface->save=(ViewerEditable *(*)(ViewerEditable *const,GError *const *const))viewer_file_editable_save;
+  // iface->undo=(ViewerEditable *(*)(ViewerEditable *const,const guint))viewer_file_editable_undo;
+  // iface->redo=(ViewerEditable *(*)(ViewerEditable *const,const guint))viewer_file_editable_redo;
+  iface->save=viewer_file_editable_save;
+  iface->undo=viewer_file_editable_undo;
+  iface->redo=viewer_file_editable_redo;
+  #pragma GCC diagnostic pop
 }

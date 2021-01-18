@@ -27,21 +27,21 @@ LDLIBS:=$(shell pkg-config --libs gobject-2.0,gio-unix-2.0)
 # make -B function_foo.o && objdump -d function_foo.o
 
 %.check: % ; $(CC) $(CFLAGS) -fsyntax-only $<
-viewer-file.h.check:
-viewer-file.c.check:
+# viewer-file.h.check:
+# viewer-file.c.check:
+
+%.i: % ; $(CC) -E $(CFLAGS) -o $@ $<
+# viewer-file.h.i:
 
 # %.o: %.c ; $(CC) -c $(CFLAGS) -o $@ $<
 # viewer-file.o:
 
 main.out: ginputstream.c new-get-set.c main.c $(foreach i, \
-  viewer-file viewer-audio-file, \
+  viewer-file viewer-audio-file viewer-editable, \
 $(foreach j, \
   c h, \
 $(i).$(j)))
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.c , $^ ) $(LDLIBS)
-
-%.i: %.c; $(CC) -E $(CFLAGS) -o $@ $<
-viewer-file.i:
 
 clean: 
 	@rm -fv *.s *.o *.out *.i # *.h.gch

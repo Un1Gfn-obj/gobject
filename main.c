@@ -3,12 +3,13 @@
 
 #include "./viewer-file.h"
 #include "./viewer-audio-file.h"
+#include "./viewer-editable.h"
 
 // External
 // extern void ginputstream();
 // extern void new_get_set();
 
-static void open_close(){
+/*static void open_close(){
 
   ViewerFile *const f0=g_object_new(VIEWER_TYPE_FILE,NULL);
   g_print("\n");
@@ -34,6 +35,36 @@ static void open_close(){
   g_print("\n");
   viewer_file_close(viewer_file_open(f0,&err),&err);
 
+  // g_object_unref(f0);
+  // g_object_unref(fa);
+
+}*/
+
+static void iface(){
+
+  ViewerFile *const vf=g_object_new(VIEWER_TYPE_FILE,NULL);
+  g_print("\n");
+
+  GError *e=NULL;
+  viewer_editable_save(VIEWER_EDITABLE(vf),&e);
+  viewer_editable_undo(VIEWER_EDITABLE(vf),1);
+  viewer_editable_redo(VIEWER_EDITABLE(vf),1);
+  g_print("\n");
+
+  ViewerFile *const vaf=g_object_new(VIEWER_TYPE_AUDIO_FILE,NULL);
+  g_print("\n");
+
+  viewer_editable_save(VIEWER_EDITABLE(vaf),&e);
+  viewer_editable_undo(VIEWER_EDITABLE(vaf),1);
+  viewer_editable_redo(VIEWER_EDITABLE(vaf),1);
+  g_print("\n");
+
+  g_object_unref(vf);
+  g_print("\n");
+
+  g_object_unref(vaf);
+  g_print("\n");
+
 }
 
 int main(){
@@ -45,8 +76,9 @@ int main(){
   // ginputstream();
   // new_get_set();
 
-  open_close();
+  // open_close();
 
+  iface();
 
   return 0;
 

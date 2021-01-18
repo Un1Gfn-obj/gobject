@@ -13,7 +13,14 @@ G_DEFINE_TYPE(
   ViewerAudioFile,
   viewer_audio_file,
   VIEWER_TYPE_FILE
-)
+)/*
+https://developer.gnome.org/gobject/stable/gobject-Type-Information.html#G-DEFINE-TYPE:CAPS
+G_DEFINE_TYPE() does the following:
+  static void viewer_file_class_init(ViewerFileClass*);
+  static void viewer_file_init(ViewerFile*);
+  static gpointer viewer_file_parent_class=NULL;
+  GType viewer_file_get_type(){...}
+*/
 
 // Destruction
 

@@ -1,5 +1,3 @@
-// https://developer.gnome.org/gobject/2.66/howto-gobject.html#howto-gobject-header
-
 #ifndef __VIEWER_FILE_H__
 #define __VIEWER_FILE_H__
 
@@ -14,7 +12,17 @@ G_DECLARE_DERIVABLE_TYPE(
   viewer_file,
   VIEWER,FILE,
   GObject
-)
+)/*
+https://developer.gnome.org/gobject/stable/gobject-Type-Information.html#G-DECLARE-DERIVABLE-TYPE:CAPS
+G_DECLARE_DERIVABLE_TYPE() does the following:
+  GType viewer_file_window_get_type();
+  static inline ViewerFile *VIEWER_FILE(gpointer){...} // Type cast
+  static inline gboolean VIEWER_IS_FILE(){...}         // Type check
+  static inline ViewerFileClass *VIEWER_FILE_CLASS(gpointer){...} // Type cast
+  static inline gboolean VIEWER_IS_FILE_CLASS(gpointer){...}      // Type check
+  typedef struct _ViewerFileClass ViewerFileClass;
+  typedef struct _ViewerFile { GObject parent_instance; } ViewerFile;
+*/
 
 // Class structure for derivable type only
 typedef struct _ViewerFileClass {
