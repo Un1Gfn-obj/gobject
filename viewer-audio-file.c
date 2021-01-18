@@ -3,10 +3,10 @@
 #include "./viewer-audio-file.h"
 
 // Instance structure for final type only
-typedef struct _ViewerAudioFile {
+struct _ViewerAudioFile {
   ViewerFile parent_instance;
   // No padding for final type
-} ViewerAudioFile;
+};
 
 // Type implementation
 G_DEFINE_TYPE(

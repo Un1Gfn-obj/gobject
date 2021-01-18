@@ -4,6 +4,7 @@
 #include "./viewer-file.h"
 #include "./viewer-audio-file.h"
 #include "./viewer-editable.h"
+#include "./viewer-editable-lossy.h"
 
 // External
 // extern void ginputstream();
@@ -49,6 +50,7 @@ static void iface(){
   viewer_editable_save(VIEWER_EDITABLE(vf),&e);
   viewer_editable_undo(VIEWER_EDITABLE(vf),1);
   viewer_editable_redo(VIEWER_EDITABLE(vf),1);
+  viewer_editable_lossy_compress(VIEWER_EDITABLE_LOSSY(vf));
   g_print("\n");
 
   ViewerFile *const vaf=g_object_new(VIEWER_TYPE_AUDIO_FILE,NULL);
@@ -57,6 +59,7 @@ static void iface(){
   viewer_editable_save(VIEWER_EDITABLE(vaf),&e);
   viewer_editable_undo(VIEWER_EDITABLE(vaf),1);
   viewer_editable_redo(VIEWER_EDITABLE(vaf),1);
+  viewer_editable_lossy_compress(VIEWER_EDITABLE_LOSSY(vaf));
   g_print("\n");
 
   g_object_unref(vf);

@@ -37,7 +37,7 @@ LDLIBS:=$(shell pkg-config --libs gobject-2.0,gio-unix-2.0)
 # viewer-file.o:
 
 main.out: ginputstream.c new-get-set.c main.c $(foreach i, \
-  viewer-file viewer-audio-file viewer-editable, \
+  viewer-file viewer-audio-file viewer-editable viewer-editable-lossy, \
 $(foreach j, \
   c h, \
 $(i).$(j)))

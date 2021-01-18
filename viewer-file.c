@@ -3,9 +3,10 @@
 #include <gio/gio.h> // GInputStream
 #include "./viewer-file.h"
 #include "./viewer-editable.h"
+#include "./viewer-editable-lossy.h"
 
 // Private structure
-typedef struct _ViewerFilePrivate {
+typedef struct {
   gchar *filename; // Private
   guint zoom_level; // Private
   GInputStream *input_stream; // Private
@@ -13,7 +14,9 @@ typedef struct _ViewerFilePrivate {
 
 // No instance structure for derivable type
 
-static void viewer_file_editable_interface_init(ViewerEditableInterface*);
+// These two are implemented below
+static void viewer_file_editable_interface_init(ViewerEditableInterface *const);
+static void viewer_file_editable_lossy_interface_init(ViewerEditableLossyInterface *const);
 
 G_DEFINE_TYPE_WITH_CODE(
   ViewerFile,
@@ -22,9 +25,16 @@ G_DEFINE_TYPE_WITH_CODE(
   G_ADD_PRIVATE(
     ViewerFile
   )
+  // https://developer.gnome.org/gobject/2.66/howto-interface-prerequisite.html
+  // The order of adding interface implementations to the main object 
+  // ... must be invoked first on the interfaces which have no prerequisites and then on the others.
   G_IMPLEMENT_INTERFACE(
     VIEWER_TYPE_EDITABLE,
     viewer_file_editable_interface_init
+  )
+  G_IMPLEMENT_INTERFACE(
+    VIEWER_TYPE_EDITABLE_LOSSY,
+    viewer_file_editable_lossy_interface_init
   )
 )/*
 https://developer.gnome.org/gobject/stable/gobject-Type-Information.html#G-DEFINE-TYPE:CAPS
@@ -72,7 +82,7 @@ static void viewer_file_finalize(GObject *const gobject){
 
 // Properties
 
-typedef enum _ViewerFileProperty {
+typedef enum {
   PROP_FILENAME=1,
   PROP_ZOOM_LEVEL,
   N_PROPERTIES
@@ -223,37 +233,52 @@ ViewerFile *viewer_file_close(ViewerFile *const self,const GError *const *const 
 
 }
 
-// Interface ViewerEditable
+// ViewerEditableInterface x ViewerFile ->
+// ViewerFileEditableInterface
 
-static void viewer_file_editable_save(ViewerFile *const self,GError *const *const error){
+static void viewer_file_editable_save(ViewerEditable *const editable,GError *const *const error){
   g_print(
     "File implementation of editable interface save method: %s.\n",
-    ((ViewerFilePrivate*)viewer_file_get_instance_private(self))->filename
+    ((ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(editable)))->filename
   );
 }
 
-static void viewer_file_editable_undo(ViewerFile *const self,const guint n_steps){
+static void viewer_file_editable_undo(ViewerEditable *const editable,const guint n_steps){
   g_print(
     "File implementation of editable interface undo method: %s.\n",
-    ((ViewerFilePrivate*)viewer_file_get_instance_private(self))->filename
+    ((ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(editable)))->filename
   );
 }
 
-static void viewer_file_editable_redo(ViewerFile *const self,const guint n_steps){
+static void viewer_file_editable_redo(ViewerEditable *const editable,const guint n_steps){
   g_print(
     "File implementation of editable interface redo method: %s.\n",
-    ((ViewerFilePrivate*)viewer_file_get_instance_private(self))->filename
+    ((ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(editable)))->filename
   );
 }
 
 static void viewer_file_editable_interface_init(ViewerEditableInterface *iface){
   g_print("viewer_file_editable_interface_init()\n");
-  #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
-  // iface->save=(ViewerEditable *(*)(ViewerEditable *const,GError *const *const))viewer_file_editable_save;
-  // iface->undo=(ViewerEditable *(*)(ViewerEditable *const,const guint))viewer_file_editable_undo;
-  // iface->redo=(ViewerEditable *(*)(ViewerEditable *const,const guint))viewer_file_editable_redo;
+  // #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
   iface->save=viewer_file_editable_save;
   iface->undo=viewer_file_editable_undo;
   iface->redo=viewer_file_editable_redo;
-  #pragma GCC diagnostic pop
+  // #pragma GCC diagnostic pop
+}
+
+// ViewerEditableLossyInterface x ViewerFile ->
+// ViewerFileEditableLossyInterface
+
+static void viewer_file_editable_lossy_compress(ViewerEditableLossy *const editable){
+  g_print (
+    "File implementation of lossy editable interface compress method: %s.\n",
+    ((ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(editable)))->filename
+  );
+}
+
+static void viewer_file_editable_lossy_interface_init(ViewerEditableLossyInterface *const iface){
+   g_print("viewer_file_editable_lossy_interface_init()\n");
+   // #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+   iface->compress=viewer_file_editable_lossy_compress;
+   // #pragma GCC diagnostic pop
 }

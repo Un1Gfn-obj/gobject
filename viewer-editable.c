@@ -1,7 +1,7 @@
 #include "./viewer-editable.h"
 
 G_DEFINE_INTERFACE(
-  ViewerEditable, // name of the new type
+  ViewerEditable, // Name of the new type
   viewer_editable,
   G_TYPE_OBJECT // GType of the prerequisite type for the interface
 )/*

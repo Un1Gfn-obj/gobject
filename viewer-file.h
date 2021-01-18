@@ -25,7 +25,7 @@ G_DECLARE_DERIVABLE_TYPE() does the following:
 */
 
 // Class structure for derivable type only
-typedef struct _ViewerFileClass {
+struct _ViewerFileClass {
 
   GObjectClass parent_class;
 
@@ -38,7 +38,7 @@ typedef struct _ViewerFileClass {
   // Padding to allow adding up to 12 new virtual functions w/o breaking ABI
   gpointer padding[12];
 
-} ViewerFileClass;
+} ;
 
 // Not yet implemented
 // Public nonvirtfunc real prototype
