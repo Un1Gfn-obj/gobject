@@ -1,6 +1,7 @@
 # https://developer.gnome.org/gobject/2.66/
 
-default: main.out;
+default: main.out
+	env G_DEBUG=fatal-criticals ./main.out
 
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-builtin-variables

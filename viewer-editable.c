@@ -11,9 +11,20 @@ G_DEFINE_INTERFACE() does the following:
   GType viewer_editable_get_type(){...}
 */
 
+// Add properties & signals to the interface
 static void viewer_editable_default_init(ViewerEditableInterface *iface){
-  // add properties and signals to the interface here
   g_print("viewer_editable_default_init()\n");
+  // Interfaces declare but do not implement properties
+  g_object_interface_install_property(iface,g_param_spec_double(
+    "autosave-frequency",
+    "Autosave frequency",
+    "Frequency (in per-seconds) to autosave backups of the editable content at. "
+    "Or zero to disable autosaves.",
+    0.0,          // Min
+    G_MAXDOUBLE,  // Nax
+    0.0,          // Default
+    G_PARAM_READWRITE
+  ));
 }
 
 void viewer_editable_save(ViewerEditable *const self,GError *const *const error){

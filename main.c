@@ -62,6 +62,19 @@ static void iface(){
   viewer_editable_lossy_compress(VIEWER_EDITABLE_LOSSY(vaf));
   g_print("\n");
 
+  GValue af=G_VALUE_INIT;
+  g_value_init(&af,G_TYPE_DOUBLE);
+
+  g_object_get_property(G_OBJECT(vf),"autosave-frequency",&af);
+  g_print("autosave-frequency=%lf\n",g_value_get_double(&af));
+  g_print("\n");
+
+  g_value_set_double(&af,89.64);
+  g_object_set_property(G_OBJECT(vf),"autosave-frequency",&af);
+  g_object_get_property(G_OBJECT(vf),"autosave-frequency",&af);
+  g_print("autosave-frequency=%lf\n",g_value_get_double(&af));
+  g_print("\n");
+
   g_object_unref(vf);
   g_print("\n");
 

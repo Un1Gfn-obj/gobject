@@ -7,9 +7,12 @@
 
 // Private structure
 typedef struct {
-  gchar *filename; // Private
-  guint zoom_level; // Private
-  GInputStream *input_stream; // Private
+  // set/gettable properties
+  gchar *filename;
+  guint zoom_level;
+  gdouble autosave_frequency; // Interface
+  // Non-set/gettable properties
+  GInputStream *input_stream;
 } ViewerFilePrivate;
 
 // No instance structure for derivable type
@@ -83,9 +86,13 @@ static void viewer_file_finalize(GObject *const gobject){
 // Properties
 
 typedef enum {
+
   PROP_FILENAME=1,
   PROP_ZOOM_LEVEL,
-  N_PROPERTIES
+  N_PROPERTIES,
+
+  PROP_AUTOSAVE_FREQUENCY
+
 } ViewerFileProperty;
 
 static GParamSpec *obj_properties[N_PROPERTIES]={};
@@ -109,8 +116,11 @@ static void viewer_file_set_property(
     priv->zoom_level=g_value_get_uint(value);
     g_print("setting zoom level to %u\n", priv->zoom_level);
     break;
+  case PROP_AUTOSAVE_FREQUENCY:
+    priv->autosave_frequency=g_value_get_double(value);
+    g_print("setting autosave frequency to %lf\n", priv->autosave_frequency);
+    break;
   default:
-    /* We don't have any other property... */
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object,property_id,pspec);
     break;
   }
@@ -129,6 +139,9 @@ static void viewer_file_get_property(
     break;
   case PROP_ZOOM_LEVEL:
     g_value_set_uint(value, priv->zoom_level);
+    break;
+  case PROP_AUTOSAVE_FREQUENCY:
+    g_value_set_double(value,priv->autosave_frequency);
     break;
   default:
     /* We don't have any other property... */
@@ -172,6 +185,11 @@ static void viewer_file_class_init(ViewerFileClass *const klass){
     G_PARAM_CONSTRUCT | G_PARAM_READWRITE // https://developer.gnome.org/gobject/stable/gobject-GParamSpec.html#GParamFlags
   );
   g_object_class_install_properties(object_class,N_PROPERTIES,obj_properties);
+  g_object_class_override_property(object_class,PROP_AUTOSAVE_FREQUENCY,"autosave-frequency");
+
+  // Segfault
+  // g_free(obj_properties[PROP_FILENAME]);
+  // g_free(obj_properties[PROP_ZOOM_LEVEL]);
 
   // Pure virtfunc (mandates implementation in children)
   klass->open=NULL;
