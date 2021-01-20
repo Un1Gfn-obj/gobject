@@ -1,4 +1,4 @@
-// https://developer.gnome.org/gobject/2.66/howto-gobject-code.html
+// Cannot split into viewer-file{,-editable{,-lossy}}.{c,h} since they may depend on ViewerFilePrivate and/or G_DEFINE_TYPE_WITH_CODE()
 
 #include <gio/gio.h> // GInputStream
 #include "./viewer-file.h"
@@ -42,7 +42,10 @@ G_DEFINE_TYPE_WITH_CODE(
 )/*
 https://developer.gnome.org/gobject/stable/gobject-Type-Information.html#G-DEFINE-TYPE:CAPS
 G_DEFINE_TYPE() does the following:
-  [Please refer to viewer-audio-file.c]
+  static void viewer_file_class_init(ViewerFileClass*);
+  static void viewer_file_init(ViewerFile*);
+  static gpointer viewer_file_parent_class=NULL;
+  GType viewer_file_get_type(){...}
 */
 
 // Destruction
@@ -68,7 +71,9 @@ static void viewer_file_dispose(GObject *const gobject){
    * the parent class implements the dispose() virtual function: it is
    * always guaranteed to do so
    */
-  g_print("viewer_file_dispose()\n");
+  g_print("Viewer::File::dispose() ");
+  g_print("chain ");
+  g_print("GObjectClass::dispose()\n");
   G_OBJECT_CLASS(viewer_file_parent_class)->dispose(gobject);
 }
 
@@ -76,10 +81,9 @@ static void viewer_file_finalize(GObject *const gobject){
   g_free((
     (ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(gobject))
   )->filename);
-  /* Always chain up to the parent class; as with dispose(), finalize()
-   * is guaranteed to exist on the parent's class virtual function table
-   */
-  g_print("viewer_file_finalize()\n");
+  g_print("Viewer::File::finalize() ");
+  g_print("chain ");
+  g_print("GObjectClass::finalize()\n");
   G_OBJECT_CLASS(viewer_file_parent_class)->finalize(gobject);
 }
 
@@ -155,19 +159,21 @@ static void viewer_file_get_property(
 // Mere virtfunc real implementation
 static ViewerFile *viewer_file_real_close(ViewerFile *const self,const GError *const *const error){
   // Default implementation for the virtual method.
-  g_print("viewer_file_real_close()\n");
+  g_print("Viewer::File::close()\n");
   return self;
 }
 
 static void viewer_file_class_init(ViewerFileClass *const klass){
 
-  g_print("viewer_file_class_init()\n");
+  g_print("Viewer::FileClass::init()\n");
 
   GObjectClass *object_class=G_OBJECT_CLASS(klass);
 
   // Destruction
   object_class->dispose=viewer_file_dispose;
   object_class->finalize=viewer_file_finalize;
+  klass->dispose=viewer_file_dispose;
+  klass->finalize=viewer_file_finalize;
 
   // Properties
   object_class->set_property=viewer_file_set_property;
@@ -201,7 +207,7 @@ static void viewer_file_class_init(ViewerFileClass *const klass){
 
 static void viewer_file_init(ViewerFile *const self){
 
-  g_print("viewer_file_init()\n");
+  g_print("Viewer::File::init()\n");
 
   //                                                                   //   compile-time runtime (O)K (W)arning (E)rror
   // #define VIEWER_TYPE_INPUT_STREAM g_input_stream_get_type()        //          O        E
@@ -226,7 +232,7 @@ ViewerFile *viewer_file_open(ViewerFile *const self,const GError *const *const e
   ViewerFileClass *const klass=VIEWER_FILE_GET_CLASS(self);
 
   if(klass->open==NULL)
-    g_error("pure virtual function open() not overriden\n");
+    g_error("pure virtual Viewer::File::open() not overriden\n");
 
   klass->open(self,error);
   return self;
@@ -251,32 +257,31 @@ ViewerFile *viewer_file_close(ViewerFile *const self,const GError *const *const 
 
 }
 
-// ViewerEditableInterface x ViewerFile ->
-// ViewerFileEditableInterface
+// Viewer::File::Editable
 
 static void viewer_file_editable_save(ViewerEditable *const editable,GError *const *const error){
   g_print(
-    "File implementation of editable interface save method: %s.\n",
+    "Viewer::File::Editable::save() %s.\n",
     ((ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(editable)))->filename
   );
 }
 
 static void viewer_file_editable_undo(ViewerEditable *const editable,const guint n_steps){
   g_print(
-    "File implementation of editable interface undo method: %s.\n",
+    "Viewer::File::Editable::undo() %s.\n",
     ((ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(editable)))->filename
   );
 }
 
 static void viewer_file_editable_redo(ViewerEditable *const editable,const guint n_steps){
   g_print(
-    "File implementation of editable interface redo method: %s.\n",
+    "Viewer::File::Editable::redo() %s.\n",
     ((ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(editable)))->filename
   );
 }
 
 static void viewer_file_editable_interface_init(ViewerEditableInterface *iface){
-  g_print("viewer_file_editable_interface_init()\n");
+  g_print("Viewer::File::Editable::init()\n");
   // #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
   iface->save=viewer_file_editable_save;
   iface->undo=viewer_file_editable_undo;
@@ -284,18 +289,17 @@ static void viewer_file_editable_interface_init(ViewerEditableInterface *iface){
   // #pragma GCC diagnostic pop
 }
 
-// ViewerEditableLossyInterface x ViewerFile ->
-// ViewerFileEditableLossyInterface
+// Viewer::File::EditableLossy
 
 static void viewer_file_editable_lossy_compress(ViewerEditableLossy *const editable){
   g_print (
-    "File implementation of lossy editable interface compress method: %s.\n",
+    "Viewer::File::EditableLossy::compress() %s.\n",
     ((ViewerFilePrivate*)viewer_file_get_instance_private(VIEWER_FILE(editable)))->filename
   );
 }
 
 static void viewer_file_editable_lossy_interface_init(ViewerEditableLossyInterface *const iface){
-   g_print("viewer_file_editable_lossy_interface_init()\n");
+   g_print("Viewer::File::EditableLossy::init()\n");
    // #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
    iface->compress=viewer_file_editable_lossy_compress;
    // #pragma GCC diagnostic pop

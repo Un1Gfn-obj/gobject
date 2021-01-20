@@ -13,7 +13,7 @@ G_DEFINE_INTERFACE() does the following:
 
 // Add properties & signals to the interface
 static void viewer_editable_default_init(ViewerEditableInterface *iface){
-  g_print("viewer_editable_default_init()\n");
+  g_print("Viewer::Editable::init()\n");
   // Interfaces declare but do not implement properties
   g_object_interface_install_property(iface,g_param_spec_double(
     "autosave-frequency",

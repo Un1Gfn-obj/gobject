@@ -13,7 +13,7 @@ G_DEFINE_INTERFACE() does the following:
 
 static void viewer_editable_lossy_default_init(ViewerEditableLossyInterface *iface){
   // add properties and signals to the interface here
-  g_print("viewer_editable_lossy_default_init()\n");
+  g_print("Viewer::EditableLossy::init()\n");
 }
 
 void viewer_editable_lossy_compress(ViewerEditableLossy *const self){

@@ -1,7 +1,7 @@
 # https://developer.gnome.org/gobject/2.66/
 
 default: main.out
-	env G_DEBUG=fatal-criticals ./main.out
+	env G_DEBUG=fatal-criticals valgrind ./main.out
 
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-builtin-variables
@@ -38,8 +38,9 @@ LDLIBS:=$(shell pkg-config --libs gobject-2.0,gio-unix-2.0)
 # viewer-file.o:
 
 main.out: ginputstream.c new-get-set.c main.c $(foreach i, \
-  viewer-file viewer-audio-file viewer-editable viewer-editable-lossy, \
-$(foreach j, \
+  viewer-file viewer-audio-file \
+  viewer-editable viewer-editable-lossy \
+, $(foreach j, \
   c h, \
 $(i).$(j)))
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(filter %.c , $^ ) $(LDLIBS)

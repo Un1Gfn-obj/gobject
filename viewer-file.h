@@ -35,6 +35,9 @@ struct _ViewerFileClass {
   // Mere virtfunc prototype
   ViewerFile *((*close)(ViewerFile *const,const GError *const *const));
 
+  void (*dispose)(GObject *const);
+  void (*finalize)(GObject *const);
+
   // Padding to allow adding up to 12 new virtual functions w/o breaking ABI
   gpointer padding[12];
 
