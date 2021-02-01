@@ -6,13 +6,13 @@
 default: main.out
 	env G_DEBUG=fatal-criticals $(CMD) ./main.out
 
-MAKEFLAGS += --no-builtin-rules
-MAKEFLAGS += --no-builtin-variables
+MAKEFLAGS+=--no-builtin-rules
+MAKEFLAGS+=--no-builtin-variables
 
 CC:=gcc
 
               INC:=$(shell pkg-config --cflags-only-I gobject-2.0,gio-unix-2.0)
-CFLAGS:=$(INC) $(shell pkg-config --cflags-only-other gobject-2.0,gio-unix-2.0)
+CFLAGS+=$(INC) $(shell pkg-config --cflags-only-other gobject-2.0,gio-unix-2.0) # Append to CFLAGS from env
 
 # https://developer.gnome.org/glib/stable/glib-Version-Information.html
 # https://developer.gnome.org/glib/stable/glib-compiling.html
@@ -22,7 +22,7 @@ $(CFLAGS) \
 -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_66 \
 -DGLIB_VERSION_MAX_ALLOWED=GLIB_VERSION_2_66
 
-LDLIBS:=$(shell pkg-config --libs gobject-2.0,gio-unix-2.0)
+LDLIBS+=$(shell pkg-config --libs gobject-2.0,gio-unix-2.0) # Append to LDLIBS from env
 
 # %.s: %.c ; $(CC) -S $(PRIMFLAGS) -o $@ $<
 # function_foo.s:
@@ -55,6 +55,10 @@ clean:
 
 cscope:
 	cscope $(INC) -1 $(id) $(file)
+
+# test:
+# 	@echo $(CFLAGS)
+# 	@echo $(LDLIBS)
 
 # https://developer.gnome.org/glib/stable/glib-running.html
 # env G_ENABLE_DIAGNOSTIC=1 derivable.out
