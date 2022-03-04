@@ -1,0 +1,4 @@
+# there is a .gitignore file with "*" in builddir/
+# thus it makes itself ignored already
+# no need to explicitly ignore it here
+# /builddir/
