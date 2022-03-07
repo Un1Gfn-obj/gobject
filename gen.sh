@@ -41,12 +41,10 @@ virtpubM=()
 # virtual private methods
 virtprivM=()
 
-# output
-H=""
-
 function help2 {
-  1>&2 echo "$(basename "$0") <namespace>::<type> [-f|-d] [-b <basetype>] [--pub|priv|virtpub|virtpriv <method>] ..."
-  1>&2 echo "$(basename "$0") -h|--help|--demo"
+  1>&2 echo "$(basename "$0") <namespace>::<type> [-f] [-b <basetype>] [--pub|priv <method>] ..."
+  1>&2 echo "$(basename "$0") <namespace>::<type>  -d  [-b <basetype>] [--pub|priv|virtpub|virtpriv <method>] ..."
+  1>&2 echo "$(basename "$0") -h|--help"
   1>&2 echo "$(basename "$0") --demo"
   exit 1
 }
@@ -74,10 +72,10 @@ function show {
   echo
 }
 
-function derivable_or_not {
+function H_variant_0 {
   if "$D"; then
     # https://stackoverflow.com/questions/15184358/how-to-avoid-bash-command-substitution-to-remove-the-newline-character
-    H0="$H"; cat <<____EOF | sed 's/^    //g' | IFS= read -rd '' H; H="$H0$H"
+    cat <<____EOF | sed 's/^    //g'
     G_DECLARE_DERIVABLE_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${B})
 
     struct _${C} {
@@ -87,9 +85,9 @@ function derivable_or_not {
       // class virtual functions
 ____EOF
     for f in "${virtpubM[@]}"; do
-      H+="  void (*${f})(${TI} *${T,,}, GError **error);"$'\n'
+      echo "  void (*${f})(${TI} *${T,,}, GError **error);"
     done
-    H0="$H"; cat <<____EOF | sed 's/^    //g' | IFS= read -rd '' H; H="$H0$H"
+    cat <<____EOF | sed 's/^    //g'
 
       // padding to allow adding up to 12 new virtual functions without breaking ABI
       gpointer padding[12];
@@ -97,8 +95,64 @@ ____EOF
     };
 ____EOF
   else
-    H+="G_DECLARE_FINAL_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${B})"$'\n'
+    echo "G_DECLARE_FINAL_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${B})"$'\n'
   fi
+}
+
+function H_emit {
+
+  cat <<__EOF | sed 's/^  //g'
+  // ${N,,}_${T,,}.h
+
+  // $(basename "$0") ${ARGSBAK[*]}
+
+  // #pragma once
+  #ifndef ${N^^}_${T^^}_H
+  #define ${N^^}_${T^^}_H
+
+  #include <glib-object.h>
+
+  G_BEGIN_DECLS
+
+  #define ${N^^}_TYPE_${T^^} ${N,,}_${T,,}_get_type()
+__EOF
+
+  H_variant_0
+
+  cat <<__EOF | sed 's/^  //g'
+  ${TI} *${N,,}_${T,,}_new();
+
+  G_END_DECLS
+
+  #endif
+__EOF
+
+}
+
+function C_emit {
+
+  cat <<__EOF | sed 's/^  //g'
+  // ${N,,}_${T,,}.c
+
+  // $(basename "$0") ${ARGSBAK[*]}
+
+  #include "${N,,}_${T,,}.h"
+
+  // private structure definition
+  typedef struct {
+
+    char *${T,,};
+
+    // other private fields
+    // ...
+
+  } ${TI}Private;
+
+  // forward declarations
+  // ...
+
+__EOF
+
 }
 
 {
@@ -144,37 +198,14 @@ ____EOF
   TI="${N^}${T^}"
   C="${N^}${T^}Class"
 
-  # echo; show; exit
-
-  H0="$H"; cat <<__EOF | sed 's/^  //g' | IFS= read -rd '' H; H="$H0$H"
-
-  // ${N,,}_${T,,}.h
-
-  // $(basename "$0") ${ARGSBAK[*]}
-
-  // #pragma once
-  #ifndef ${N^^}_${T^^}_H
-  #define ${N^^}_${T^^}_H
-
-  #include <glib-object.h>
-
-  G_BEGIN_DECLS
-
-  #define ${N^^}_TYPE_${T^^} ${N,,}_${T,,}_get_type()
-__EOF
-
-  derivable_or_not
-  H+=$'\n'
-
-  H0="$H"; cat <<__EOF | sed 's/^  //g' | IFS= read -rd '' H; H="$H0$H"
-  ${TI} *${N,,}_${T,,}_new();
-
-  G_END_DECLS
-
-  #endif
-__EOF
-
-  echo "$H"
   # pygmentize -l c <<<"$H"
+  echo
+  echo "/$(printf -- '*%.0s' {1..78})/"
+  echo
+  H_emit
+  echo
+  echo "/$(printf -- '*%.0s' {1..78})/"
+  echo
+  C_emit
 
 }
