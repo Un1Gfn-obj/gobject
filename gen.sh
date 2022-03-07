@@ -11,35 +11,17 @@
 # https://stackoverflow.com/questions/15184358/how-to-avoid-bash-command-substitution-to-remove-the-newline-character
 shopt -s lastpipe
 
-# basetype
-B="GObject"
+# namespace, type, type instance, class (base type)
+BN=""; BT=""; BTI=""; # BC="";
 
-# namespace
-N=""
+# namespace, type, type instance, class
+N=""; T=""; TI=""; C="";
 
-# type
-T=""
+# true if final, false if derivable
+F=true
 
-# type instance
-TI=""
-
-# class
-C=""
-
-# derivable?
-D=false
-
-# public methods
-pubM=()
-
-# private methods
-privM=()
-
-# virtual public methods
-virtpubM=()
-
-# virtual private methods
-virtprivM=()
+# methods
+pubM=(); privM=(); virtpubM=(); virtprivM=();
 
 function help2 {
   1>&2 echo "$(basename "$0") <namespace>::<type> [-f] [-b <basetype>] [--pub|priv <method>] ..."
@@ -50,20 +32,37 @@ function help2 {
 }
 
 function demo {
-  "$0" -f nS::dIcT -b NSKeyValuePair --pub cksum
-  read -r
-  clear
-  tput reset
-  "$0" -d nS::dIcT -b NSKeyValuePair --pub cksum \
-    --virtpub close \
-    --virtpub open \
-    --virtpub validate \
-    --virtpub compress \
+  CMD=("$0" -f ns::dict --pub cksum)
+  # "${CMD[@]}" | less -SRM +%
+  CMD+=(-b ns::kvp)
+  "${CMD[@]}" | less -SRM +%
+  # read -r
+  # clear
+  # tput reset
+  CMD=( "$0" -d ns::dict --pub cksum
+    --virtpub close
+    --virtpub open
+    --virtpub validate
+    --virtpub compress
     --virtpub encrypt
+  )
+  # "${CMD[@]}" | less -SRM +%
+  CMD+=(-b ns::kvp)
+  "${CMD[@]}" | less -SRM +%
+}
+
+function nt2nt {
+  [[ "$1" =~ ^(([0-9A-Za-z]+)::([0-9A-Za-z]+))$ ]] || help2
+  [ -n "${BASH_REMATCH[2]}" ] || help2
+  [ -n "${BASH_REMATCH[3]}" ] || help2
+  printf -v "$2" '%s' "${BASH_REMATCH[2],,}"
+  printf -v "$3" '%s' "${BASH_REMATCH[3],,}"
+  printf -v "$4" '%s' "${!2^}${!3^}"
+  printf -v "$5" '%s' "${!2^}${!3^}Class"
 }
 
 function show {
-  if "$D"; then echo "derivable"; else echo "final"; fi
+  if "$F"; then echo "final"; else echo "derivable"; fi
   echo
   echo "pub      - ${pubM[*]/%/()}"
   echo "priv     - ${privM[*]/%/()}"
@@ -73,29 +72,76 @@ function show {
 }
 
 function H_variant_0 {
-  if "$D"; then
-    # https://stackoverflow.com/questions/15184358/how-to-avoid-bash-command-substitution-to-remove-the-newline-character
+  if "$F"; then
+    echo "G_DECLARE_FINAL_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${BTI})"$'\n'
+  else
     cat <<____EOF | sed 's/^    //g'
-    G_DECLARE_DERIVABLE_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${B})
+    G_DECLARE_DERIVABLE_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${BTI})
 
+    // type instance structure of a derivable class should be defined in its H/header file
     struct _${C} {
-
       GObjectClass parent_class;
-
       // class virtual functions
 ____EOF
     for f in "${virtpubM[@]}"; do
       echo "  void (*${f})(${TI} *${T,,}, GError **error);"
     done
     cat <<____EOF | sed 's/^    //g'
-
       // padding to allow adding up to 12 new virtual functions without breaking ABI
       gpointer padding[12];
-
     };
 ____EOF
+    echo
+  fi
+}
+
+function C_variant_0 {
+  if "$F"; then
+    cat <<____EOF | sed 's/^    //g'
+    // type instance structure of a final class should be defined in its C/source file
+    typedef struct _${TI} {
+      GObject parent_instance;
+      // private data of a final class should be placed in the instance structure
+      char *${T,,};
+    } ${TI};
+
+    // G_DEFINE_TYPE_WITH_PRIVATE() is not available for final
+    G_DEFINE_TYPE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
+____EOF
   else
-    echo "G_DECLARE_FINAL_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${B})"$'\n'
+    cat <<____EOF | sed 's/^    //g'
+    // (A) derivable without private
+    // G_DEFINE_TYPE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
+
+    // (B) derivable with private
+    // private data for a derivable class must be included in a private structure, and G_DEFINE_TYPE_WITH_PRIVATE must be used
+    typedef struct {
+      char *${T,,};
+    } ${TI}Private;
+    //
+    G_DEFINE_TYPE_WITH_PRIVATE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
+____EOF
+  fi
+}
+
+function C_variant_1 {
+  if "$F"; then
+    cat <<____EOF | sed 's/^    //g'
+    static void ${N,,}_${T,,}_init (${TI} *self){
+      // initialize private members (final type cannot have public member)
+      self->${T,,} = NULL;
+    }
+____EOF
+  else
+    cat <<____EOF | sed 's/^    //g'
+    static void ${N,,}_${T,,}_init (${TI} *self){
+      // initialize public members
+      // ...
+      // initialize private members
+      ${TI}Private *priv = ${N,,}_${T,,}_get_instance_private(self);
+      priv->${T,,} = NULL;
+    }
+____EOF
   fi
 }
 
@@ -116,7 +162,7 @@ function H_emit {
 
   #define ${N^^}_TYPE_${T^^} ${N,,}_${T,,}_get_type()
 __EOF
-
+  
   H_variant_0
 
   cat <<__EOF | sed 's/^  //g'
@@ -137,21 +183,23 @@ function C_emit {
   // $(basename "$0") ${ARGSBAK[*]}
 
   #include "${N,,}_${T,,}.h"
+__EOF
+  echo
 
-  // private structure definition
-  typedef struct {
+  C_variant_0
+  echo
 
-    char *${T,,};
-
-    // other private fields
-    // ...
-
-  } ${TI}Private;
-
+  cat <<__EOF | sed 's/^  //g'
   // forward declarations
   // ...
 
+  static void ${N,,}_${T,,}_class_init (${C} *klass){
+    // ...
+  }
 __EOF
+  echo
+
+  C_variant_1
 
 }
 
@@ -164,48 +212,38 @@ __EOF
   eval set -- "$TEMP"
   unset -v TEMP
 
+  nt2nt "g::object" BN BT BTI BC
+
   while true; do
     case x"$1" in
       x"-h"|x"--help") help2; exit;;
       x"--demo")       demo; exit;;
-      #
-      x"-b") shift; B="$1"; shift;;
-      #
-      # x"-d") echo "err: derivable type not implemented yet"; exit 1;; # D=true;  shift;;
-      x"-d") D=true; shift;;
-      x"-f") D=false; shift;;
-      #
-      x"--pub")      shift; pubM+=("$1");      shift;;
-      x"--virtpub")  shift; virtpubM+=("$1");  shift;;
-      x"--virtpriv") shift; virtprivM+=("$1"); shift;;
-      x"--priv")     shift; privM+=("$1");     shift;;
-      #
-      x"--") shift;  ((1==$#)) || { echo "err: there should be exactly one positional parameter"; exit 1; }; break;;
-      *)     echo "err: invalid parameter '$1'"; exit 1;;
+      x"-b") shift; nt2nt "$1" BN BT BTI BC; shift;;
+      x"-d") F=false; shift;;
+      x"-f") F=true; shift;;
+      x"--pub"|x"--priv"|x"--virtpub"|x"--virtpriv") declare -n A="${1:2}M"; shift; A+=("$1"); shift;;
+      x"--") shift; ((1==$#)) || { echo "err: there should be exactly one positional parameter"; exit 1; }; break;;
+      *) echo "err: invalid parameter '$1'"; exit 1;;
     esac
   done
 
-  if ! "$D"; then
+  if "$F"; then
     ((0==${#virtpubM[@]}))  || { echo "err: virtual method not allowed in final (non-derivable) type"; exit 1; }
     ((0==${#virtprivM[@]})) || { echo "err: virtual method not allowed in final (non-derivable) type"; exit 1; }
   fi
 
-  [[ "$1" =~ ^(([0-9A-Za-z]+)::([0-9A-Za-z]+))$ ]] || help2
-  [ -n "${BASH_REMATCH[2]}" ] || help2
-  N="${BASH_REMATCH[2],,}"
-  [ -n "${BASH_REMATCH[3]}" ] || help2
-  T="${BASH_REMATCH[3],,}"
-  TI="${N^}${T^}"
-  C="${N^}${T^}Class"
+  nt2nt "$1" N T TI C
 
   # pygmentize -l c <<<"$H"
-  echo
+
   echo "/$(printf -- '*%.0s' {1..78})/"
   echo
   H_emit
   echo
+
   echo "/$(printf -- '*%.0s' {1..78})/"
   echo
   C_emit
+  echo
 
-}
+}; exit
