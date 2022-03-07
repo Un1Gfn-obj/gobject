@@ -12,7 +12,7 @@
 shopt -s lastpipe
 
 # namespace, type, type instance, class (base type)
-BN=""; BT=""; BTI=""; # BC="";
+BN=""; BT=""; BTI=""; BC="";
 
 # namespace, type, type instance, class
 N=""; T=""; TI=""; C="";
@@ -79,8 +79,8 @@ function H_variant_0 {
     G_DECLARE_DERIVABLE_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${BTI})
 
     // type instance structure of a derivable class should be defined in its H/header file
-    struct _${C} {
-      GObjectClass parent_class;
+    typedef struct {
+      ${BC} parent_class;
       // class virtual functions
 ____EOF
     for f in "${virtpubM[@]}"; do
@@ -89,59 +89,9 @@ ____EOF
     cat <<____EOF | sed 's/^    //g'
       // padding to allow adding up to 12 new virtual functions without breaking ABI
       gpointer padding[12];
-    };
+    } ${C};
 ____EOF
     echo
-  fi
-}
-
-function C_variant_0 {
-  if "$F"; then
-    cat <<____EOF | sed 's/^    //g'
-    // type instance structure of a final class should be defined in its C/source file
-    typedef struct _${TI} {
-      GObject parent_instance;
-      // private data of a final class should be placed in the instance structure
-      char *${T,,};
-    } ${TI};
-
-    // G_DEFINE_TYPE_WITH_PRIVATE() is not available for final
-    G_DEFINE_TYPE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
-____EOF
-  else
-    cat <<____EOF | sed 's/^    //g'
-    // (A) derivable without private
-    // G_DEFINE_TYPE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
-
-    // (B) derivable with private
-    // private data for a derivable class must be included in a private structure, and G_DEFINE_TYPE_WITH_PRIVATE must be used
-    typedef struct {
-      char *${T,,};
-    } ${TI}Private;
-    //
-    G_DEFINE_TYPE_WITH_PRIVATE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
-____EOF
-  fi
-}
-
-function C_variant_1 {
-  if "$F"; then
-    cat <<____EOF | sed 's/^    //g'
-    static void ${N,,}_${T,,}_init (${TI} *self){
-      // initialize private members (final type cannot have public member)
-      self->${T,,} = NULL;
-    }
-____EOF
-  else
-    cat <<____EOF | sed 's/^    //g'
-    static void ${N,,}_${T,,}_init (${TI} *self){
-      // initialize public members
-      // ...
-      // initialize private members
-      ${TI}Private *priv = ${N,,}_${T,,}_get_instance_private(self);
-      priv->${T,,} = NULL;
-    }
-____EOF
   fi
 }
 
@@ -186,20 +136,124 @@ function C_emit {
 __EOF
   echo
 
-  C_variant_0
+  if "$F"; then
+    cat <<____EOF | sed 's/^    //g'
+    // type instance structure of a final class should be defined in its C/source file
+    typedef struct {
+      ${BTI} parent_instance;
+      // private data of a final class should be placed in the instance structure
+      void *${T,,};
+      gchar *string;
+      guint num;
+      GInputStream *stream;
+    } ${TI};
+
+    G_DEFINE_TYPE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
+____EOF
+  else
+    cat <<____EOF | sed 's/^    //g'
+    // (A) derivable without private
+    // G_DEFINE_TYPE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
+
+    // (B) derivable with private
+    // private data for a derivable class must be included in a private structure, and G_DEFINE_TYPE_WITH_PRIVATE must be used
+    typedef struct {
+      void *${T,,};
+      gchar *string;
+      guint num;
+      GInputStream *stream;
+    } ${TI}Private;
+    //
+    G_DEFINE_TYPE_WITH_PRIVATE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
+____EOF
+  fi
+  echo
+
+  echo "static void ${N,,}_${T,,}_dispose(${BTI} *${BTI,,}){"
+  if "$F"; then
+    echo "  g_clear_object(${N^^}_${T^^}(${BTI,,})->input_stream);"
+  else
+    echo "  ${TI}Private *priv = ${N,,}_${T,,}_get_instance_private(${N^^}_${T^^}(${BTI,,}));"
+    echo "  g_clear_object(&priv->input_stream);"
+  fi
+  echo "  ${BN^^}_${BT^^}_CLASS(${N,,}_${T,,}_parent_class)->dispose(${BTI,,});"
+  echo "}"
+  echo
+
+  echo "static void ${N,,}_${T,,}_finalize(${BTI} *${BTI,,}){"
+  if "$F"; then
+    echo "  g_free(${N^^}_${T^^}(${BTI,,})->filename);"
+  else
+    echo "  ${TI}Private *priv = ${N,,}_${T,,}_get_instance_private(${N^^}_${T^^}(${BTI,,}));"
+    echo "  g_free(priv->filename);"
+  fi
+  echo "  ${BN^^}_${BT^^}_CLASS(${N,,}_${T,,}_parent_class)->finalize(${BTI,,});"
+  echo "}"
   echo
 
   cat <<__EOF | sed 's/^  //g'
   // forward declarations
   // ...
 
-  static void ${N,,}_${T,,}_class_init (${C} *klass){
-    // ...
+  enum {
+    RESERVED = 0,
+    PROP_STR,
+    PROP_UINT,
+    N_PROPERTIES
+  };
+
+  static GParamSpec *obj_properties[N_PROPERTIES] = {};
+
+  static void ${N,,}_${T,,}_class_init(${C} *klass){
+
+    ${BC} *${BT,,}_class = ${BN^^}_${BT^^}_CLASS(klass);
+    ${BT,,}_class->dispose = {BN,,}_${BT,,}_dispose;
+    ${BT,,}_class->finalize = {BN,,}_${BT,,}_finalize;
+
+    ${BT,,}_class->set_property = ${N,,}_${T,,}_set_property;
+    ${BT,,}_class->get_property = ${N,,}_${T,,}_get_property;
+    obj_properties[PROP_STR] = g_param_spec_string(
+      "string",
+      "String",
+      "A string parameter",
+      NULL  /* default */,
+      G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE
+    );
+    obj_properties[PROP_UINT] = g_param_spec_uint(
+      "unsigned-integer",
+      "Unsigned integer",
+      "A unsigned integer parameter",
+      0   /* min */,
+      100 /* max */,
+      75  /* default */,
+      G_PARAM_READWRITE
+    );
+    g_object_class_install_properties(${BT,,}_class, N_PROPERTIES, obj_properties);
+
   }
 __EOF
   echo
 
-  C_variant_1
+  echo "static void ${N,,}_${T,,}_init(${TI} *self){"
+  if "$F"; then
+    cat <<____EOF | sed 's/^    //g'
+      // initialize private members (final type cannot have public member)
+      self->${T,,} = NULL;
+      self->input_stream = g_object_new(${N^^}_TYPE_INPUT_STREAM, NULL);
+      self->filename = NULL;
+____EOF
+  else
+    cat <<____EOF | sed 's/^    //g'
+      // initialize public members
+      // ...
+      // initialize private members
+      ${TI}Private *priv = ${N,,}_${T,,}_get_instance_private(self);
+      priv->${T,,} = NULL;
+      priv->input_stream = g_object_new(${N^^}_TYPE_INPUT_STREAM, NULL);
+      priv->filename = NULL;
+____EOF
+  fi
+  echo "}"
 
 }
 
