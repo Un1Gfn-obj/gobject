@@ -1,3 +1,6 @@
 project('tutorial', 'c')
-gtkdep = dependency('libcrypto')
-executable('demo', 'main.c', dependencies : gtkdep)
+executable('demo', 'main.c', 'ns_dict.c', dependencies:[
+  dependency('libcrypto'),
+  dependency('gobject-2.0'),
+  dependency('gio-2.0'),
+])

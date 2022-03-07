@@ -23,32 +23,28 @@ F=true
 # methods
 pubM=(); privM=(); virtpubM=(); virtprivM=();
 
+# H to emit header, C to emit source
+O=""
+
 function help2 {
-  1>&2 echo "$(basename "$0") <namespace>::<type> [-f] [-b <basetype>] [--pub|priv <method>] ..."
-  1>&2 echo "$(basename "$0") <namespace>::<type>  -d  [-b <basetype>] [--pub|priv|virtpub|virtpriv <method>] ..."
+  1>&2 echo "$(basename "$0") -H|-C <namespace>::<type> [-f] [-b <basetype>] [--pub|priv <method>] ..."
+  1>&2 echo "$(basename "$0") -H|-C <namespace>::<type>  -d  [-b <basetype>] [--pub|priv|virtpub|virtpriv <method>] ..."
   1>&2 echo "$(basename "$0") -h|--help"
   1>&2 echo "$(basename "$0") --demo"
   exit 1
 }
 
+function nonexist {
+  [ -e "$1" ] && { echo "err: $1 exists"; exit 1; }
+}
+
 function demo {
-  CMD=("$0" -f ns::dict --pub cksum)
-  # "${CMD[@]}" | less -SRM +%
-  CMD+=(-b ns::kvp)
-  "${CMD[@]}" | less -SRM +%
-  # read -r
-  # clear
-  # tput reset
-  CMD=( "$0" -d ns::dict --pub cksum
-    --virtpub close
-    --virtpub open
-    --virtpub validate
-    --virtpub compress
-    --virtpub encrypt
-  )
-  # "${CMD[@]}" | less -SRM +%
-  CMD+=(-b ns::kvp)
-  "${CMD[@]}" | less -SRM +%
+  nonexist ns_dict.h
+  nonexist ns_dict.c
+  "$0" -H ns::dict -d --pub cksum 1>|ns_dict.h
+  "$0" -C ns::dict -d --pub cksum 1>|ns_dict.c
+  # "$0" -H ns::dict -f --pub cksum 1>|ns_dict.h
+  # "$0" -C ns::dict -f --pub cksum 1>|ns_dict.c
 }
 
 function nt2nt {
@@ -71,30 +67,6 @@ function show {
   echo
 }
 
-function H_variant_0 {
-  if "$F"; then
-    echo "G_DECLARE_FINAL_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${BTI})"$'\n'
-  else
-    cat <<____EOF | sed 's/^    //g'
-    G_DECLARE_DERIVABLE_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${BTI})
-
-    // type instance structure of a derivable class should be defined in its H/header file
-    typedef struct {
-      ${BC} parent_class;
-      // class virtual functions
-____EOF
-    for f in "${virtpubM[@]}"; do
-      echo "  void (*${f})(${TI} *${T,,}, GError **error);"
-    done
-    cat <<____EOF | sed 's/^    //g'
-      // padding to allow adding up to 12 new virtual functions without breaking ABI
-      gpointer padding[12];
-    } ${C};
-____EOF
-    echo
-  fi
-}
-
 function H_emit {
 
   cat <<__EOF | sed 's/^  //g'
@@ -112,8 +84,28 @@ function H_emit {
 
   #define ${N^^}_TYPE_${T^^} ${N,,}_${T,,}_get_type()
 __EOF
-  
-  H_variant_0
+
+  if "$F"; then
+    echo "G_DECLARE_FINAL_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${BTI})"$'\n'
+  else
+    cat <<____EOF | sed 's/^    //g'
+    G_DECLARE_DERIVABLE_TYPE(${TI}, ${N,,}_${T,,}, ${N^^}, ${T^^}, ${BTI})
+
+    // type instance structure of a derivable class should be defined in its H/header file
+    struct _${C} {
+      ${BC} parent_class;
+      // class virtual functions
+____EOF
+    for f in "${virtpubM[@]}"; do
+      echo "  void (*${f})(${TI} *${T,,}, GError **error);"
+    done
+    cat <<____EOF | sed 's/^    //g'
+      // padding to allow adding up to 12 new virtual functions without breaking ABI
+      gpointer padding[12];
+    };
+____EOF
+    echo
+  fi
 
   cat <<__EOF | sed 's/^  //g'
   ${TI} *${N,,}_${T,,}_new();
@@ -133,20 +125,21 @@ function C_emit {
   // $(basename "$0") ${ARGSBAK[*]}
 
   #include "${N,,}_${T,,}.h"
+  #include <gio/gio.h>
 __EOF
   echo
 
   if "$F"; then
     cat <<____EOF | sed 's/^    //g'
     // type instance structure of a final class should be defined in its C/source file
-    typedef struct {
+    struct _${TI} {
       ${BTI} parent_instance;
       // private data of a final class should be placed in the instance structure
       void *${T,,};
-      gchar *string;
+      gchar *filename;
       guint num;
-      GInputStream *stream;
-    } ${TI};
+      GInputStream *input_stream;
+    };
 
     G_DEFINE_TYPE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
 ____EOF
@@ -159,9 +152,9 @@ ____EOF
     // private data for a derivable class must be included in a private structure, and G_DEFINE_TYPE_WITH_PRIVATE must be used
     typedef struct {
       void *${T,,};
-      gchar *string;
+      gchar *filename;
       guint num;
-      GInputStream *stream;
+      GInputStream *input_stream;
     } ${TI}Private;
     //
     G_DEFINE_TYPE_WITH_PRIVATE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
@@ -171,7 +164,7 @@ ____EOF
 
   echo "static void ${N,,}_${T,,}_dispose(${BTI} *${BTI,,}){"
   if "$F"; then
-    echo "  g_clear_object(${N^^}_${T^^}(${BTI,,})->input_stream);"
+    echo "  g_clear_object(&(${N^^}_${T^^}(${BTI,,})->input_stream));"
   else
     echo "  ${TI}Private *priv = ${N,,}_${T,,}_get_instance_private(${N^^}_${T^^}(${BTI,,}));"
     echo "  g_clear_object(&priv->input_stream);"
@@ -207,11 +200,11 @@ ____EOF
   static void ${N,,}_${T,,}_class_init(${C} *klass){
 
     ${BC} *${BT,,}_class = ${BN^^}_${BT^^}_CLASS(klass);
-    ${BT,,}_class->dispose = {BN,,}_${BT,,}_dispose;
-    ${BT,,}_class->finalize = {BN,,}_${BT,,}_finalize;
+    ${BT,,}_class->dispose = ${N,,}_${T,,}_dispose;
+    ${BT,,}_class->finalize = ${N,,}_${T,,}_finalize;
 
-    ${BT,,}_class->set_property = ${N,,}_${T,,}_set_property;
-    ${BT,,}_class->get_property = ${N,,}_${T,,}_get_property;
+    // ${BT,,}_class->set_property = ${N,,}_${T,,}_set_property;
+    // ${BT,,}_class->get_property = ${N,,}_${T,,}_get_property;
     obj_properties[PROP_STR] = g_param_spec_string(
       "string",
       "String",
@@ -239,7 +232,7 @@ __EOF
     cat <<____EOF | sed 's/^    //g'
       // initialize private members (final type cannot have public member)
       self->${T,,} = NULL;
-      self->input_stream = g_object_new(${N^^}_TYPE_INPUT_STREAM, NULL);
+      self->input_stream = g_object_new(G_TYPE_INPUT_STREAM, NULL);
       self->filename = NULL;
 ____EOF
   else
@@ -249,7 +242,7 @@ ____EOF
       // initialize private members
       ${TI}Private *priv = ${N,,}_${T,,}_get_instance_private(self);
       priv->${T,,} = NULL;
-      priv->input_stream = g_object_new(${N^^}_TYPE_INPUT_STREAM, NULL);
+      priv->input_stream = g_object_new(G_TYPE_INPUT_STREAM, NULL);
       priv->filename = NULL;
 ____EOF
   fi
@@ -262,24 +255,27 @@ ____EOF
   (($#>=1)) || help2
 
   ARGSBAK=("$@")
-  TEMP=$(/bin/getopt -n 'gen.sh' -o 'hfdb:' -l 'help,demo,pub:,virtpub:,virtpriv:,priv:' -- "$@") || help2
+  TEMP=$(/bin/getopt -n 'gen.sh' -o 'b:''fd''HC' -l 'help,demo,pub:,virtpub:,virtpriv:,priv:' -- "$@") || help2
   eval set -- "$TEMP"
   unset -v TEMP
 
   nt2nt "g::object" BN BT BTI BC
 
   while true; do
-    case x"$1" in
-      x"-h"|x"--help") help2; exit;;
-      x"--demo")       demo; exit;;
-      x"-b") shift; nt2nt "$1" BN BT BTI BC; shift;;
-      x"-d") F=false; shift;;
-      x"-f") F=true; shift;;
-      x"--pub"|x"--priv"|x"--virtpub"|x"--virtpriv") declare -n A="${1:2}M"; shift; A+=("$1"); shift;;
-      x"--") shift; ((1==$#)) || { echo "err: there should be exactly one positional parameter"; exit 1; }; break;;
+    case "x$1" in
+      x-h|x--help) help2; exit;;
+      x--demo) demo; exit;;
+      x--pub|x--priv|x--virtpub|x--virtpriv) declare -n A="${1:2}M"; shift; A+=("$1"); shift;;
+      x-b) shift; nt2nt "$1" BN BT BTI BC; shift;;
+      x-f) F=true; shift;;
+      x-d) F=false; shift;;
+      x-H|x-C) O="${1:1:1}"; shift;;
+      x--) shift; ((1==$#)) || { echo "err: there should be exactly one positional parameter"; exit 1; }; break;;
       *) echo "err: invalid parameter '$1'"; exit 1;;
     esac
   done
+
+  [ H == "$O" ] || [ C == "$O" ] || { echo "err: do yout want the header or the source?"; exit 1; }
 
   if "$F"; then
     ((0==${#virtpubM[@]}))  || { echo "err: virtual method not allowed in final (non-derivable) type"; exit 1; }
@@ -289,15 +285,7 @@ ____EOF
   nt2nt "$1" N T TI C
 
   # pygmentize -l c <<<"$H"
-
-  echo "/$(printf -- '*%.0s' {1..78})/"
-  echo
-  H_emit
-  echo
-
-  echo "/$(printf -- '*%.0s' {1..78})/"
-  echo
-  C_emit
+  "$O"_emit
   echo
 
 }; exit

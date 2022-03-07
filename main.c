@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <string.h>
 #include <openssl/evp.h>
+#include "ns_dict.h"
 
 #define SZ 128
 
@@ -25,4 +26,5 @@ int main() {
   printf("%.*s\n",SZ,enc);
 
   return 0;
+
 }
