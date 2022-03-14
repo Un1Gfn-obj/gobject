@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <string.h>
 #include <openssl/evp.h>
-#include "ns_dict.h"
+#include "viewer_file.h"
 
 #define SZ 128
 

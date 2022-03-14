@@ -39,12 +39,20 @@ function nonexist {
 }
 
 function demo {
-  nonexist ns_dict.h
-  nonexist ns_dict.c
-  "$0" -H ns::dict -d --pub cksum 1>|ns_dict.h
-  "$0" -C ns::dict -d --pub cksum 1>|ns_dict.c
+  # nonexist ns_dict.h
+  # nonexist ns_dict.c
   # "$0" -H ns::dict -f --pub cksum 1>|ns_dict.h
   # "$0" -C ns::dict -f --pub cksum 1>|ns_dict.c
+  # "$0" -H ns::dict -d --pub cksum 1>|ns_dict.h
+  # "$0" -C ns::dict -d --pub cksum 1>|ns_dict.c
+  nonexist viewer_file.h
+  nonexist viewer_file.c
+  "$0" -H viewer::file -f --pub openPUB 1>|viewer_file.h
+  "$0" -C viewer::file -f --pub openPUB 1>|viewer_file.c
+  # "$0" -H viewer::file -d --pub openPUB --virtpub openVirtPub --virtpriv openVirtPriv 1>|viewer_file.h
+  # "$0" -C viewer::file -d --pub openPUB --virtpub openVirtPub --virtpriv openVirtPriv 1>|viewer_file.c
+  # "$0" -H viewer::file -d --pub openPUB 1>|ns_dict.h
+  # "$0" -C viewer::file -d --pub openPUB 1>|ns_dict.c
 }
 
 function nt2nt {
@@ -106,10 +114,16 @@ ____EOF
 ____EOF
     echo
   fi
-
   cat <<__EOF | sed 's/^  //g'
   ${TI} *${N,,}_${T,,}_new();
-
+__EOF
+  echo
+  echo "// non-virtual public methods"
+  for f in "${pubM[@]}"; do
+    echo "void ${N,,}_${T,,}_${f}(${TI} *self, GError **error);"
+  done
+  echo
+  cat <<__EOF | sed 's/^  //g'
   G_END_DECLS
 
   #endif
@@ -190,8 +204,8 @@ ____EOF
 
   enum {
     RESERVED = 0,
-    PROP_STR,
-    PROP_UINT,
+    PROP_FILENAME,
+    PROP_ZOOM_LEVEL,
     N_PROPERTIES
   };
 
@@ -205,20 +219,20 @@ ____EOF
 
     // ${BT,,}_class->set_property = ${N,,}_${T,,}_set_property;
     // ${BT,,}_class->get_property = ${N,,}_${T,,}_get_property;
-    obj_properties[PROP_STR] = g_param_spec_string(
-      "string",
-      "String",
-      "A string parameter",
+    obj_properties[PROP_FILENAME] = g_param_spec_string(
+      "filename",
+      "Filename",
+      "Name of the file to load and display from.",
       NULL  /* default */,
       G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE
     );
-    obj_properties[PROP_UINT] = g_param_spec_uint(
-      "unsigned-integer",
-      "Unsigned integer",
-      "A unsigned integer parameter",
+    obj_properties[PROP_ZOOM_LEVEL] = g_param_spec_uint(
+      "zoom-level",
+      "Zoom level",
+      "Zoom level to view the file at.",
       0   /* min */,
-      100 /* max */,
-      75  /* default */,
+      10 /* max */,
+      2  /* default */,
       G_PARAM_READWRITE
     );
     g_object_class_install_properties(${BT,,}_class, N_PROPERTIES, obj_properties);
@@ -247,6 +261,14 @@ ____EOF
 ____EOF
   fi
   echo "}"
+  echo
+  echo "// non-virtual public methods"
+  cat <<__EOF | sed 's/^  //g'
+  void ${N,,}_${T,,}_open(${TI} *self, GError **error){
+    g_return_if_fail(${N^^}_IS_${T^^}(self));
+    g_return_if_fail(error == NULL || *error == NULL);
+  }
+__EOF
 
 }
 
