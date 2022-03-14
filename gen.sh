@@ -21,7 +21,7 @@ N=""; T=""; TI=""; C="";
 F=true
 
 # methods
-pubM=(); privM=(); virtpubM=(); virtprivM=();
+M_pub=(); M_priv=(); M_virtpub=(); M_virtpriv=();
 
 # H to emit header, C to emit source
 O=""
@@ -47,12 +47,12 @@ function demo {
   # "$0" -C ns::dict -d --pub cksum 1>|ns_dict.c
   nonexist viewer_file.h
   nonexist viewer_file.c
-  "$0" -H viewer::file -f --pub openPUB 1>|viewer_file.h
-  "$0" -C viewer::file -f --pub openPUB 1>|viewer_file.c
-  # "$0" -H viewer::file -d --pub openPUB --virtpub openVirtPub --virtpriv openVirtPriv 1>|viewer_file.h
-  # "$0" -C viewer::file -d --pub openPUB --virtpub openVirtPub --virtpriv openVirtPriv 1>|viewer_file.c
-  # "$0" -H viewer::file -d --pub openPUB 1>|ns_dict.h
-  # "$0" -C viewer::file -d --pub openPUB 1>|ns_dict.c
+  # "$0" -H viewer::file -f --pub openPub 1>|viewer_file.h
+  # "$0" -C viewer::file -f --pub openPub 1>|viewer_file.c
+  "$0" -H viewer::file -d --pub openPub --virtpub openVirtPub --virtpub closeVirtPub --virtpriv openVirtPriv --priv openVirtPriv 1>|viewer_file.h
+  "$0" -C viewer::file -d --pub openPub --virtpub openVirtPub --virtpub closeVirtPub --virtpriv openVirtPriv --priv openVirtPriv 1>|viewer_file.c
+  # "$0" -H viewer::file -d --pub openPub 1>|ns_dict.h
+  # "$0" -C viewer::file -d --pub openPub 1>|ns_dict.c
 }
 
 function nt2nt {
@@ -68,10 +68,10 @@ function nt2nt {
 function show {
   if "$F"; then echo "final"; else echo "derivable"; fi
   echo
-  echo "pub      - ${pubM[*]/%/()}"
-  echo "priv     - ${privM[*]/%/()}"
-  echo "virtpub  - ${virtpubM[*]/%/()}"
-  echo "virtpriv - ${virtprivM[*]/%/()}"
+  echo "pub      - ${M_pub[*]/%/()}"
+  echo "priv     - ${M_priv[*]/%/()}"
+  echo "virtpub  - ${M_virtpub[*]/%/()}"
+  echo "virtpriv - ${M_virtpriv[*]/%/()}"
   echo
 }
 
@@ -102,9 +102,9 @@ __EOF
     // type instance structure of a derivable class should be defined in its H/header file
     struct _${C} {
       ${BC} parent_class;
-      // class virtual functions
+      // virtual public methods
 ____EOF
-    for f in "${virtpubM[@]}"; do
+    for f in "${M_virtpub[@]}"; do
       echo "  void (*${f})(${TI} *${T,,}, GError **error);"
     done
     cat <<____EOF | sed 's/^    //g'
@@ -119,7 +119,12 @@ ____EOF
 __EOF
   echo
   echo "// non-virtual public methods"
-  for f in "${pubM[@]}"; do
+  for f in "${M_pub[@]}"; do
+    echo "void ${N,,}_${T,,}_${f}(${TI} *self, GError **error);"
+  done
+  echo
+  echo "// virtual public methods"
+  for f in "${M_virtpub[@]}"; do
     echo "void ${N,,}_${T,,}_${f}(${TI} *self, GError **error);"
   done
   echo
@@ -149,9 +154,9 @@ __EOF
     struct _${TI} {
       ${BTI} parent_instance;
       // private data of a final class should be placed in the instance structure
-      void *${T,,};
+      void *data;
       gchar *filename;
-      guint num;
+      guint zoom_level;
       GInputStream *input_stream;
     };
 
@@ -165,17 +170,18 @@ ____EOF
     // (B) derivable with private
     // private data for a derivable class must be included in a private structure, and G_DEFINE_TYPE_WITH_PRIVATE must be used
     typedef struct {
-      void *${T,,};
+      void *data;
       gchar *filename;
-      guint num;
+      guint zoom_level;
       GInputStream *input_stream;
     } ${TI}Private;
     //
     G_DEFINE_TYPE_WITH_PRIVATE(${TI}, ${N,,}_${T,,}, ${BN^^}_TYPE_${BT^^})
 ____EOF
   fi
-  echo
 
+  echo
+  echo "// object destruction phase 1 - dispose"
   echo "static void ${N,,}_${T,,}_dispose(${BTI} *${BTI,,}){"
   if "$F"; then
     echo "  g_clear_object(&(${N^^}_${T^^}(${BTI,,})->input_stream));"
@@ -185,8 +191,9 @@ ____EOF
   fi
   echo "  ${BN^^}_${BT^^}_CLASS(${N,,}_${T,,}_parent_class)->dispose(${BTI,,});"
   echo "}"
-  echo
 
+  echo
+  echo "// object destruction phase 2 - finalize"
   echo "static void ${N,,}_${T,,}_finalize(${BTI} *${BTI,,}){"
   if "$F"; then
     echo "  g_free(${N^^}_${T^^}(${BTI,,})->filename);"
@@ -196,6 +203,16 @@ ____EOF
   fi
   echo "  ${BN^^}_${BT^^}_CLASS(${N,,}_${T,,}_parent_class)->finalize(${BTI,,});"
   echo "}"
+
+  for f in "${M_virtpub[@]}"; do
+    echo
+    cat <<____EOF | sed 's/^    //g'
+    // default implementation of virtual public method ${N}::${T}::${f}()
+    static void ${N,,}_${T,,}_real_${f}(${TI} *self, GError **error){
+      // ...
+    }
+____EOF
+  done
   echo
 
   cat <<__EOF | sed 's/^  //g'
@@ -210,13 +227,23 @@ ____EOF
   };
 
   static GParamSpec *obj_properties[N_PROPERTIES] = {};
-
+__EOF
+  echo
+  cat <<__EOF | sed 's/^  //g'
   static void ${N,,}_${T,,}_class_init(${C} *klass){
 
     ${BC} *${BT,,}_class = ${BN^^}_${BT^^}_CLASS(klass);
     ${BT,,}_class->dispose = ${N,,}_${T,,}_dispose;
     ${BT,,}_class->finalize = ${N,,}_${T,,}_finalize;
-
+__EOF
+  echo
+  echo "  // virtual public methods"
+  for f in "${M_virtpub[@]}"; do
+    echo "  // klass->${f} = NULL; // pure virtual - mandates implementation in derived class"
+    echo "  klass->${f} = ${N,,}_${T,,}_real_${f}; // semi-virtual"
+  done
+  echo
+  cat <<__EOF | sed 's/^  //g'
     // ${BT,,}_class->set_property = ${N,,}_${T,,}_set_property;
     // ${BT,,}_class->get_property = ${N,,}_${T,,}_get_property;
     obj_properties[PROP_FILENAME] = g_param_spec_string(
@@ -245,7 +272,7 @@ __EOF
   if "$F"; then
     cat <<____EOF | sed 's/^    //g'
       // initialize private members (final type cannot have public member)
-      self->${T,,} = NULL;
+      self->data = NULL;
       self->input_stream = g_object_new(G_TYPE_INPUT_STREAM, NULL);
       self->filename = NULL;
 ____EOF
@@ -255,7 +282,7 @@ ____EOF
       // ...
       // initialize private members
       ${TI}Private *priv = ${N,,}_${T,,}_get_instance_private(self);
-      priv->${T,,} = NULL;
+      priv->data = NULL;
       priv->input_stream = g_object_new(G_TYPE_INPUT_STREAM, NULL);
       priv->filename = NULL;
 ____EOF
@@ -263,12 +290,36 @@ ____EOF
   echo "}"
   echo
   echo "// non-virtual public methods"
-  cat <<__EOF | sed 's/^  //g'
-  void ${N,,}_${T,,}_open(${TI} *self, GError **error){
-    g_return_if_fail(${N^^}_IS_${T^^}(self));
-    g_return_if_fail(error == NULL || *error == NULL);
-  }
-__EOF
+  for f in "${M_pub[@]}"; do
+    echo
+    cat <<____EOF | sed 's/^    //g'
+    void ${N,,}_${T,,}_${f}(${TI} *self, GError **error){
+      g_return_if_fail(${N^^}_IS_${T^^}(self));
+      g_return_if_fail(error == NULL || *error == NULL);
+    }
+____EOF
+  done
+  echo
+  echo "// virtual public methods"
+  for f in "${M_virtpub[@]}"; do
+    echo
+    cat <<____EOF | sed 's/^    //g'
+    void ${N,,}_${T,,}_${f}(${TI} *self, GError **error){
+
+      g_return_if_fail(${N^^}_IS_${T^^}(self));
+      g_return_if_fail(error == NULL || *error == NULL);
+      ${C} *klass = ${N^^}_${T^^}_GET_CLASS(self);
+
+      // either one
+      /* (A) ignore it silently */ // if (klass->${f} == NULL) return;
+      /* (B) warn the user      */ g_return_if_fail(klass->${f} != NULL);
+
+      // redirect ${N,,}::${T,,}::${f}() call to the relevant implementation
+      klass->${f}(self, error);
+
+    }
+____EOF
+  done
 
 }
 
@@ -287,7 +338,7 @@ __EOF
     case "x$1" in
       x-h|x--help) help2; exit;;
       x--demo) demo; exit;;
-      x--pub|x--priv|x--virtpub|x--virtpriv) declare -n A="${1:2}M"; shift; A+=("$1"); shift;;
+      x--pub|x--priv|x--virtpub|x--virtpriv) declare -n A="M_${1:2}"; shift; A+=("$1"); shift;;
       x-b) shift; nt2nt "$1" BN BT BTI BC; shift;;
       x-f) F=true; shift;;
       x-d) F=false; shift;;
@@ -300,14 +351,13 @@ __EOF
   [ H == "$O" ] || [ C == "$O" ] || { echo "err: do yout want the header or the source?"; exit 1; }
 
   if "$F"; then
-    ((0==${#virtpubM[@]}))  || { echo "err: virtual method not allowed in final (non-derivable) type"; exit 1; }
-    ((0==${#virtprivM[@]})) || { echo "err: virtual method not allowed in final (non-derivable) type"; exit 1; }
+    ((0==${#M_virtpub[@]}))  || { echo "err: virtual method not allowed in final (non-derivable) type"; exit 1; }
+    ((0==${#M_virtpriv[@]})) || { echo "err: virtual method not allowed in final (non-derivable) type"; exit 1; }
   fi
 
   nt2nt "$1" N T TI C
 
   # pygmentize -l c <<<"$H"
   "$O"_emit
-  echo
 
 }; exit
